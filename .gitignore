@@ -2,6 +2,7 @@
 .run/
 .tools/
 jarvis.local.json
+memory/MEMORY.md
 
 # Python
 __pycache__/
