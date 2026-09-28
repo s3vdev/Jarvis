@@ -12,6 +12,7 @@ import subprocess
 import threading
 
 from jarvis_config import find_hermes, load_config, public_hermes
+from memory_store import load_notes
 
 
 class BridgeError(RuntimeError):
@@ -29,7 +30,9 @@ _PERSONA = (
     'Behalte alle Hermes-Sicherheitsprüfungen bei. Umgehe niemals eine Verweigerung. '
     'Wenn ein Werkzeug eine Freigabe braucht, sag nur: Das geht von hier aus nicht. '
     'Nicht auf ein Terminal, Hermes-Fenster oder Eintippen verweisen. '
-    'Keine Änderung an Hermes-Konfiguration, Profilen oder Gedächtnis. '
+    'Keine Änderung an Hermes-Konfiguration oder Profilen. '
+    'Erfinde keine persönlichen Angaben. Nutze nur Erinnerungen, die der Nutzer '
+    'gespeichert hat. Schreibe das Gedächtnis nicht selbst. '
     'Behaupte Aktionen nur mit erfolgreichem Werkzeugergebnis.'
 )
 
@@ -105,7 +108,12 @@ class HermesBridge:
         self._ensure_approvals([self.executable, '-p', load_config()['profile']], env)
         if not self._introduced:
             self._introduced = True
-            text = _PERSONA + '\n\nArbeitsordner: ' + str(self.root) + '.\n\nNutzer: ' + text
+            spoken = text
+            text = _PERSONA + '\n\nArbeitsordner: ' + str(self.root) + '.'
+            notes = load_notes()
+            if notes:
+                text += '\n\nErinnerungen, die der Nutzer gespeichert hat:\n' + notes
+            text += '\n\nNutzer: ' + spoken
         reply = self._ensure_client().ask(text)
         self._remember(reply)
         return reply['text'].strip()

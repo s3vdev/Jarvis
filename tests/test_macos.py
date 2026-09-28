@@ -98,6 +98,7 @@ class MacTests(unittest.TestCase):
         viz.CONFIRM_FILE = str(bus / '.voice_confirm')
         viz.CONFIRM_REPLY_FILE = str(bus / '.voice_confirm_reply')
         viz.USAGE_FILE = str(bus / '.voice_usage')
+        viz.set_memory_root(str(bus))
         (bus / '.voice_state').write_text('listening')
         (bus / '.voice_status').write_text('LISTENING')
         server = viz.ThreadingHTTPServer(('127.0.0.1', 0), viz.Handler)
@@ -155,6 +156,26 @@ class MacTests(unittest.TestCase):
             self.assertIn('id="usageBtn"', html)
             self.assertIn('usageFill', html)
             self.assertIn('usageTrack', html)
+            self.assertIn('PERSÖNLICHES', html)
+            self.assertIn('id="memBox"', html)
+            self.assertIn('function typingInField', html)
+            self.assertIn('node === "TEXTAREA"', html)
+            mem_req = urllib.request.Request(
+                'http://127.0.0.1:%d/memory' % port,
+                data=json.dumps({'text': 'Ich heiße Sven.'}).encode(),
+                headers={'Content-Type': 'application/json'})
+            memorized = json.loads(urllib.request.urlopen(mem_req, timeout=2).read())
+            self.assertTrue(memorized['ok'])
+            self.assertEqual(memorized['memory']['text'], 'Ich heiße Sven.')
+            settings = json.loads(urllib.request.urlopen(
+                'http://127.0.0.1:%d/settings' % port, timeout=2).read())
+            self.assertEqual(settings['memory']['text'], 'Ich heiße Sven.')
+            secret = urllib.request.Request(
+                'http://127.0.0.1:%d/memory' % port,
+                data=json.dumps({'text': 'password: geheim123'}).encode(),
+                headers={'Content-Type': 'application/json'})
+            with self.assertRaises(Exception):
+                urllib.request.urlopen(secret, timeout=2)
             (bus / '.voice_confirm').write_text(json.dumps({
                 'id': 'aabbccddeeff', 'kind': 'open_app', 'app': 'Safari'}))
             state = json.loads(urllib.request.urlopen('http://127.0.0.1:%d/state' % port, timeout=2).read())

@@ -51,6 +51,13 @@
     font: inherit; letter-spacing: .08em; cursor: pointer; }
   #panel button:hover { border-color: #ffcf7a; }
   #previewBtn { margin: -4px 0 12px; }
+  #panel .sub { margin: 0 0 6px; letter-spacing: .08em; opacity: .55; font-size: 11px; }
+  #memBox { width: 100%; min-height: 88px; margin: 0 0 6px; resize: vertical;
+    box-sizing: border-box; border-radius: 8px; padding: 7px 8px;
+    border: 1px solid rgba(255,207,122,.35); background: rgba(5,6,10,.8);
+    color: #ffe6b0; font: inherit; }
+  #memHint { margin: 0 0 8px; opacity: .65; line-height: 1.4; }
+  #memBtn { margin: 0 0 12px; }
   #usageBox { margin: 0 0 8px; padding: 10px 10px 8px; border-radius: 8px;
     border: 1px solid rgba(255,207,122,.22); background: rgba(5,6,10,.45); }
   #usagePlan { margin: 0 0 10px; letter-spacing: .06em; }
@@ -149,6 +156,11 @@
     <option value="radar">Radar · Ringe</option>
     <option value="iris">Iris · ruhig</option>
   </select>
+  <label>PERSÖNLICHES</label>
+  <label for="memBox" class="sub">ERINNERUNGEN</label>
+  <textarea id="memBox" maxlength="2000" placeholder="Was soll Jarvis über dich wissen?"></textarea>
+  <div id="memHint">Nur was du hier oder mit „merk dir“ sagst. Keine Passwörter.</div>
+  <button id="memBtn" type="button">SPEICHERN</button>
 </div>
 <div id="subtitle"></div>
 <div id="confirm" role="dialog" aria-live="polite">
@@ -678,6 +690,10 @@
   const animSel = document.getElementById("animSel");
   const previewBtn = document.getElementById("previewBtn");
   const usageBtn = document.getElementById("usageBtn");
+  const memBox = document.getElementById("memBox");
+  const memBtn = document.getElementById("memBtn");
+  const memHint = document.getElementById("memHint");
+  const memHintDefault = memHint ? memHint.textContent : "";
   function fillSettings(data) {
     if (!voiceSel || !data || !data.voices) return;
     voiceSel.innerHTML = "";
@@ -697,6 +713,10 @@
     }
     fillHermes(data.hermes || {});
     fillUsage(data.usage);
+    if (memBox && data.memory && typeof data.memory.text === "string") {
+      memBox.value = data.memory.text;
+      if (data.memory.max) memBox.maxLength = data.memory.max;
+    }
   }
   function resetLabel(iso) {
     if (!iso) return "";
@@ -836,6 +856,28 @@
     saveSettings();
     fetch("/preview", { method: "POST" }).catch(() => {});
   });
+  if (memBtn && memBox) {
+    memBtn.addEventListener("click", () => {
+      memBtn.disabled = true;
+      fetch("/memory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: memBox.value }),
+      }).then((r) => r.json()).then((data) => {
+        if (data && data.ok && data.memory) {
+          memBox.value = data.memory.text || "";
+          if (memHint) memHint.textContent = "Gespeichert.";
+        } else if (memHint) {
+          memHint.textContent = (data && data.error) || "Das speichere ich nicht.";
+        }
+      }).catch(() => {
+        if (memHint) memHint.textContent = "Speichern hat nicht geklappt.";
+      }).finally(() => { memBtn.disabled = false; });
+    });
+    memBox.addEventListener("input", () => {
+      if (memHint) memHint.textContent = memHintDefault;
+    });
+  }
   if (usageBtn) usageBtn.addEventListener("click", () => {
     usageBtn.disabled = true;
     fetch("/usage", { cache: "no-store" }).then((r) => r.json()).then(fillUsage).catch(() => {
@@ -845,8 +887,13 @@
   if (!SHOT) {
     fetch("/settings", { cache: "no-store" }).then((r) => r.json()).then(fillSettings).catch(() => {});
   }
+  function typingInField(target) {
+    const node = target && target.nodeName;
+    return node === "TEXTAREA" || node === "INPUT" || node === "SELECT";
+  }
   window.addEventListener("keydown", (e) => {
     if (assemble < 1) assemble = 1;
+    if (typingInField(e.target)) return;
     if (e.key === "f" || e.key === "F") { showFps = !showFps; fpsEl.style.opacity = showFps ? 0.6 : 0; }
     if (confirmId && (e.key === "Enter" || e.key === "Escape")) {
       e.preventDefault();

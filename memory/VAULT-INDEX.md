@@ -1,6 +1,3 @@
 # Jarvis-Gedächtnis
 
-Eigenständiger lokaler Speicher für diese Jarvis-Installation.
-
-- `MEMORY.md`: ausdrücklich freigegebene Fakten und Präferenzen.
-- Persönliche Angaben: noch keine gespeichert.
+`MEMORY.md` hält die Erinnerungen, die du im Zahnrad unter Persönliches speicherst oder mit „merk dir“ sagst.

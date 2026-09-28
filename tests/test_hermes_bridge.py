@@ -66,7 +66,28 @@ class BridgeTests(unittest.TestCase):
             self.assertIn('Du bist Jarvis', client.calls[0])
             self.assertNotIn('Hermes-Terminal', client.calls[0])
             self.assertIn('Das geht von hier aus nicht', client.calls[0])
+            self.assertNotIn('\n\nErinnerungen, die der Nutzer gespeichert hat:\n', client.calls[0])
             self.assertEqual(client.calls[1], 'Zweiter Satz.')
+
+    def test_saved_notes_are_sent_on_first_turn_only(self):
+        from hermes_bridge import HermesBridge
+        import memory_store
+        with tempfile.TemporaryDirectory() as mem_tmp, tempfile.TemporaryDirectory(dir=ROOT / '.run') as tmp:
+            memory_store.set_memory_root(mem_tmp)
+            memory_store.save_notes('Kaffee schwarz')
+            try:
+                bridge = HermesBridge(ROOT, Path(tmp) / 'session.json', executable='/local/hermes')
+                client = FakeClient({
+                    'ok': True, 'text': 'Hallo', 'session_id': '20260927_220000_abcdef'})
+                bridge._client = client
+                with patch('hermes_bridge.subprocess.run', return_value=self._policy()):
+                    bridge.ask('Guten Morgen.')
+                    bridge.ask('Und weiter?')
+                self.assertIn('Kaffee schwarz', client.calls[0])
+                self.assertIn('Guten Morgen.', client.calls[0])
+                self.assertEqual(client.calls[1], 'Und weiter?')
+            finally:
+                memory_store.set_memory_root(ROOT)
 
     def test_explicit_session_survives_restart_without_latest(self):
         from hermes_bridge import HermesBridge

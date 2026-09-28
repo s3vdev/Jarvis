@@ -64,6 +64,9 @@ _VOICE = os.path.join(os.path.dirname(HERE), "voice-line")
 if _VOICE not in sys.path:
     sys.path.insert(0, _VOICE)
 from jarvis_config import find_hermes, load_config, public_hermes  # noqa: E402
+from memory_store import public_memory, save_notes, set_memory_root  # noqa: E402
+
+set_memory_root(os.path.dirname(HERE))
 
 REAL_PORT = 8777
 MOCK_PORT = 8778
@@ -296,6 +299,7 @@ def settings_payload():
     data["sensitivities"] = list(SENSITIVITY)
     data["hermes"] = hermes_status()
     data["usage"] = load_cached_usage()
+    data["memory"] = public_memory()
     return data
 
 
@@ -446,6 +450,27 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(400, b"bad settings", "text/plain")
                 return
             self._send(200, json.dumps(settings_payload()).encode("utf-8"), "application/json")
+            return
+        if path == "/memory":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = 0
+            if length > 8000:
+                self._send(400, b"bad memory", "text/plain")
+                return
+            body = self._read_json()
+            if not isinstance(body, dict) or "text" not in body:
+                self._send(400, b"bad memory", "text/plain")
+                return
+            if not isinstance(body.get("text"), str):
+                self._send(400, b"bad memory", "text/plain")
+                return
+            stored = save_notes(body["text"])
+            if stored is None:
+                self._send(400, json.dumps({"ok": False, "error": "Das speichere ich nicht."}).encode("utf-8"), "application/json")
+                return
+            self._send(200, json.dumps({"ok": True, "memory": public_memory()}).encode("utf-8"), "application/json")
             return
         if path == "/preview":
             os.makedirs(BUS_DIR, exist_ok=True)

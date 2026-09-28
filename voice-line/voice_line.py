@@ -534,6 +534,7 @@ def command_from_utterance(utterance, last_reply=""):
 # --- Brain bridge (Hermes default profile, explicit Jarvis session) ----------
 from hermes_bridge import HermesBridge, BridgeError
 from jarvis_config import find_hermes, public_hermes
+from memory_store import add_note, load_notes, set_memory_root
 from local_skills import (
     clock_text, execute_action, match_skill, next_volume, public_confirm,
     set_file_roots, timer_phrase,
@@ -544,6 +545,7 @@ set_file_roots((
     os.path.join(os.path.expanduser("~"), "Downloads"),
     BRAIN_DIR,
 ))
+set_memory_root(BRAIN_DIR)
 _hermes = find_hermes()
 _brain = None
 _last_brain_error = ""
@@ -994,6 +996,20 @@ def run_skill(skill, last_reply):
         if spoken:
             speak(spoken)
             finish_speech()
+        return spoken
+    if kind == "memory_add":
+        stored = add_note(skill.get("note") or "")
+        spoken = "Ist notiert." if stored else "Das speichere ich nicht."
+        write_status(spoken)
+        speak(spoken)
+        finish_speech()
+        return spoken
+    if kind == "memory_recall":
+        notes = load_notes()
+        spoken = notes if notes else "Ich habe noch keine Erinnerungen."
+        write_status(spoken)
+        speak(spoken)
+        finish_speech()
         return spoken
     return last_reply
 

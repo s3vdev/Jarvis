@@ -126,6 +126,16 @@ _FILE_READ = re.compile(
     r"^(?:was\s+steht\s+in\s+(?:der\s+|dem\s+)?(?:datei|dokument)\s+(?P<name>.+))$",
     re.I,
 )
+_REMEMBER = re.compile(
+    r"^(?:merk(?:e)?\s+dir|erinnere\s+dich(?:\s+daran)?)\s+"
+    r"(?:bitte\s+)?(?:dass\s+|an\s+)?(?P<note>.+)$",
+    re.I,
+)
+_RECALL = re.compile(
+    r"^(?:was\s+weißt\s+du\s+(?:über\s+mich|noch)|was\s+merkst\s+du\s+dir|"
+    r"welche\s+erinnerungen|was\s+steht\s+in\s+den\s+erinnerungen)$",
+    re.I,
+)
 MAX_TIMER_S = 2 * 60 * 60
 _BLOCKED_PARTS = {".ssh", ".hermes", ".aws", ".gnupg", ".kube"}
 _BLOCKED_NAMES = {"auth.json", ".env", "id_rsa", "id_ed25519", "credentials"}
@@ -417,6 +427,13 @@ def match_skill(text):
         return None
     if _REPEAT.match(raw):
         return {"kind": "repeat"}
+    if _RECALL.match(raw):
+        return {"kind": "memory_recall"}
+    remembered = _REMEMBER.match(raw)
+    if remembered:
+        note = remembered.group("note").strip()
+        if note:
+            return {"kind": "memory_add", "note": note}
     if _CLOCK.match(raw):
         return {"kind": "clock", "what": "time"}
     if _DATE.match(raw):

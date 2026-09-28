@@ -52,7 +52,7 @@ Jeder Start ist eine frische Sitzung. Freigaben bleiben an. Sprache bestätigt k
 
 Befehle, die eine neue Freigabe brauchen, laufen hier nicht. `hermes -z` und `--yolo` sind verboten.
 
-`memory/` bleibt leer, bis du selbst etwas hineinschreibst. Jarvis liest und schreibt dort nicht von allein.
+Erinnerungen stehen unter **Persönliches** im Zahnrad. Oder sag **merk dir …**. Jarvis liest nur das, schreibt nur nach Speichern oder „merk dir“. Keine Passwörter.
 
 Wenn eine Aktion eine echte Freigabe braucht: Jarvis mit Strg+C beenden, dann im Terminal die Sitzungs-ID aus `.run/hermes-session.json` einsetzen und den Auftrag dort nochmal sagen.
 

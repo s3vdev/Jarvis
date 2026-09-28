@@ -1,3 +1,3 @@
 # Gedächtnis
 
-Noch keine persönlichen Informationen gespeichert.
+Spreche mich immer mit meinem Vornamen Sven an.
