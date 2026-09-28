@@ -25,6 +25,15 @@
   #status .dot.bad { background: #ff453a; box-shadow: 0 0 12px #ff453a; }
   #status .detail { min-height: 1em; font: 400 12px/1.3 ui-monospace, Consolas, monospace;
     letter-spacing: 1px; opacity: .7; }
+  #bootMeter { display: none; width: min(260px, 58vw); margin-top: 2px; gap: 7px;
+    flex-direction: column; align-items: stretch; pointer-events: none; }
+  #bootMeter.show { display: flex; }
+  #bootTrack { height: 7px; border-radius: 999px; background: rgba(255,207,122,.12);
+    overflow: hidden; }
+  #bootFill { height: 100%; width: 0; border-radius: inherit;
+    background: linear-gradient(90deg, #c8963a, #ffe08a); transition: width .2s linear; }
+  #bootPct { font: 500 12px/1 ui-monospace, Consolas, monospace; letter-spacing: .18em;
+    text-align: center; color: #ffe6b0; opacity: .9; }
   #controls { position: fixed; left: 0; right: 0; bottom: 18px; display: flex; gap: 10px;
     justify-content: center; pointer-events: none; }
   #controls button { pointer-events: auto; appearance: none; border: 1px solid rgba(255,207,122,.45);
@@ -109,7 +118,7 @@
 <canvas id="scene"></canvas>
 <div id="hud">state: idle</div>
 <div id="fps">-- fps</div>
-<div id="status"><div class="big">J.A.R.V.I.S</div><div class="sub"><span class="dot"></span><span class="label">CONNECTED</span></div><div class="detail"></div></div>
+<div id="status"><div class="big">J.A.R.V.I.S</div><div class="sub"><span class="dot"></span><span class="label">CONNECTED</span></div><div class="detail"></div><div id="bootMeter"><div id="bootTrack"><div id="bootFill"></div></div><div id="bootPct">0%</div></div></div>
 <div id="controls">
   <button id="pauseBtn" type="button">PAUSE</button>
   <button id="listenBtn" type="button">ZUHÖREN</button>
@@ -443,9 +452,9 @@
   };
   const E = { motion: .07, glow: .55, signal: .2, converge: 0, hue: 0, core: .45, jitter: .05 };
   let thinkAmt = 0, speakAmt = 0;
-  let curState = "idle", alertOn = false, curStatus = "", pausedOn = false;
+  let curState = "idle", alertOn = false, curStatus = "", pausedOn = false, bootPct = 0;
   let levelTarget = 0, level = 0, yaw = 0, pitch = 0.35;
-  let lastOverlayState = null, lastOverlayStatus = null, lastOverlayAlert = null, lastOverlayPaused = null;
+  let lastOverlayState = null, lastOverlayStatus = null, lastOverlayAlert = null, lastOverlayPaused = null, lastBootPct = null;
 
   function ease(cur, tgt, dt) { const tau = tgt > cur ? 0.5 : 1.0; return cur + (tgt - cur) * (1 - Math.exp(-dt / tau)); }
   function applyTargets(dt) {
@@ -564,14 +573,27 @@
   // ---------------- Overlays ----------------
   function updateOverlays() {
     if (curState === lastOverlayState && curStatus === lastOverlayStatus &&
-        alertOn === lastOverlayAlert && pausedOn === lastOverlayPaused) return;
+        alertOn === lastOverlayAlert && pausedOn === lastOverlayPaused &&
+        bootPct === lastBootPct) return;
     lastOverlayState = curState; lastOverlayStatus = curStatus;
-    lastOverlayAlert = alertOn; lastOverlayPaused = pausedOn;
+    lastOverlayAlert = alertOn; lastOverlayPaused = pausedOn; lastBootPct = bootPct;
     statusEl.style.display = "flex";
     const label = alertOn ? "ALERT" : pausedOn ? "PAUSED" : (BADGE[curState] || "CONNECTED");
     statusLabel.textContent = label;
     statusDot.className = "dot" + (label === "CONNECTED" ? " on" : (label === "ALERT" || label === "PAUSED") ? " bad" : "");
-    statusDetail.textContent = curState === "booting" ? (curStatus || "initializing…") : "";
+    const bootMeter = document.getElementById("bootMeter");
+    const bootFill = document.getElementById("bootFill");
+    const bootPctEl = document.getElementById("bootPct");
+    if (curState === "booting") {
+      const pct = Math.max(0, Math.min(100, Number(bootPct) || 0));
+      statusDetail.textContent = curStatus || "Sprachmodell wird geladen …";
+      if (bootMeter) bootMeter.classList.add("show");
+      if (bootFill) bootFill.style.width = pct + "%";
+      if (bootPctEl) bootPctEl.textContent = pct + "%";
+    } else {
+      statusDetail.textContent = "";
+      if (bootMeter) bootMeter.classList.remove("show");
+    }
     const showSub = !pausedOn && curStatus && curStatus !== "JARVIS CONNECTED" &&
       (curState === "listening" || curState === "thinking" || curState === "speaking");
     subEl.textContent = showSub ? curStatus : "";
@@ -618,6 +640,7 @@
       lastOk = performance.now();
       curState = STATES[d.state] ? d.state : "idle";
       alertOn = !!d.alert; pausedOn = !!d.paused; curStatus = d.status || "";
+      bootPct = typeof d.progress === "number" ? d.progress : 0;
       if (d.hermes) fillHermes(d.hermes);
       showConfirm(d.confirm);
       if (pausedOn) levelTarget = 0;
@@ -627,8 +650,9 @@
   if (!SHOT && !MOCKSTATE) setInterval(poll, 100);
   if (MOCKSTATE) {
     curState = STATES[MOCKSTATE] ? MOCKSTATE : "idle"; alertOn = (MOCKSTATE === "alert");
-    curStatus = { booting: "Loading speech recognition…", listening: "Listening…",
+    curStatus = { booting: "Sprachmodell 42%", listening: "Listening…",
                   thinking: "Thinking…", speaking: "All systems nominal, Boss." }[MOCKSTATE] || "";
+    if (MOCKSTATE === "booting") bootPct = 42;
   }
 
   // ---------------- Main loop ----------------

@@ -47,7 +47,7 @@ For noisy environments, an optional setting can require the name **Jarvis** befo
 
 The main interface is intentionally minimal and centered around the animated Jarvis orb. Additional controls and configuration are available through the settings panel and the macOS menu bar.
 
-Closing the main window does not terminate Jarvis. The application can be quit through the menu bar icon.
+Closing the main window does not terminate Jarvis. The voice session keeps running in the background, including after the launch Terminal is closed. Quit from the menu bar icon. If the voice session dies, the icon leaves with it.
 
 ---
 
@@ -123,11 +123,15 @@ The setup creates a dedicated Python virtual environment in:
 .venv
 ```
 
-After setup, Jarvis can be started by double-clicking:
+After setup, a real macOS app is available at:
 
 ```text
-Jarvis starten.command
+dist/Jarvis.app
 ```
+
+Move it to **Applications** like any other app. Personal data and runtime files live in `~/Library/Application Support/Jarvis`, not inside the app bundle.
+
+Double-clicking `Jarvis starten.command` opens the same app once it has been built.
 
 The launcher searches for Hermes in:
 
@@ -135,7 +139,7 @@ The launcher searches for Hermes in:
 2. `JARVIS_HERMES`
 3. `~/.hermes/installs`
 
-If port `8777` is already in use, the launcher stops instead of starting another conflicting instance.
+If Jarvis is already running, the launcher reopens the window. If port `8777` is taken by another process, it stops.
 
 ---
 
@@ -180,7 +184,7 @@ A preview can be played directly from the settings.
 
 If network-based speech output is unavailable, Jarvis can fall back to the local macOS voice **Anna**.
 
-On first use, macOS may request microphone permission for the Terminal or process used to launch Jarvis.
+On first use, macOS asks for microphone permission for **Jarvis**.
 
 ---
 

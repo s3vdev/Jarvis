@@ -38,6 +38,7 @@ CONFIRM_FILE = os.path.join(BUS_DIR, ".voice_confirm")
 CONFIRM_REPLY_FILE = os.path.join(BUS_DIR, ".voice_confirm_reply")
 CONFIRM_ID = re.compile(r"^[0-9a-fA-F]{8,24}$")
 USAGE_FILE = os.path.join(BUS_DIR, ".voice_usage")
+LOAD_FILE = os.path.join(BUS_DIR, ".voice_load")
 CONFIRM_APPS = (
     "Safari", "Mail", "Music", "Calendar", "Notes", "Finder", "Terminal",
     "System Settings", "Messages", "Photos", "Maps",
@@ -63,10 +64,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 _VOICE = os.path.join(os.path.dirname(HERE), "voice-line")
 if _VOICE not in sys.path:
     sys.path.insert(0, _VOICE)
-from jarvis_config import find_hermes, load_config, public_hermes  # noqa: E402
+from jarvis_config import data_root, find_hermes, load_config, public_hermes  # noqa: E402
 from memory_store import public_memory, save_notes, set_memory_root  # noqa: E402
 
-set_memory_root(os.path.dirname(HERE))
+set_memory_root(str(data_root()))
 
 REAL_PORT = 8777
 MOCK_PORT = 8778
@@ -113,7 +114,7 @@ def real_state():
     level, samples, fresh = _read_waveform()
     # A fresh waveform during idle means playback even if the state file lagged.
     # Listening writes waveforms too, so an explicit listening or thinking turn stays put.
-    if fresh and level > 0.0 and state in ("idle", "booting"):
+    if fresh and level > 0.0 and state == "idle":
         state = "speaking"
     if not fresh:
         level = 0.0
@@ -126,9 +127,17 @@ def real_state():
         level = 0.0
         samples = []
         status = status or "PAUSED"
+    progress = None
+    if state == "booting":
+        raw_pct = _read_text(LOAD_FILE)
+        try:
+            progress = max(0, min(100, int(raw_pct)))
+        except (TypeError, ValueError):
+            progress = 0
     return {"state": state, "level": round(level, 4), "alert": alert,
             "paused": paused, "status": status, "samples": samples,
-            "hermes": hermes_status(), "confirm": pending_confirm()}
+            "hermes": hermes_status(), "confirm": pending_confirm(),
+            "progress": progress}
 
 
 # --- Mock loop (never touches the real bus) ---------------------------------

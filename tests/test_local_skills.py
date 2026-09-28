@@ -22,6 +22,7 @@ class LocalSkillTests(unittest.TestCase):
         self.assertEqual(timer, {'kind': 'timer', 'seconds': 300})
         self.assertEqual(match_skill('Timer aus')['kind'], 'timer_cancel')
         self.assertIsNone(match_skill('Wie wird das Wetter?'))
+        self.assertIsNone(match_skill('suche nach sven mielke aus bergneustadt'))
         self.assertEqual(match_skill('merk dir ich trinke Kaffee')['kind'], 'memory_add')
         self.assertEqual(match_skill('was merkst du dir')['kind'], 'memory_recall')
 

@@ -51,7 +51,7 @@ Für lautere Umgebungen kann in den Einstellungen festgelegt werden, dass Jarvis
 
 Die Oberfläche ist bewusst reduziert gehalten. Im Mittelpunkt steht die animierte Jarvis-Kugel. Weitere Einstellungen sind über das Zahnrad erreichbar.
 
-Das rote Schließen des Hauptfensters beendet Jarvis nicht vollständig, sondern blendet das Fenster aus. Beendet wird die Anwendung über das Symbol in der macOS-Menüleiste.
+Das rote Schließen des Hauptfensters beendet Jarvis nicht vollständig, sondern blendet das Fenster aus. Die Sprachsteuerung läuft im Hintergrund weiter, auch wenn das Start-Terminal geschlossen wird. Beendet wird die Anwendung über das Symbol in der macOS-Menüleiste. Verschwindet die Sprachlinie, verschwindet auch das Symbol.
 
 ---
 
@@ -139,11 +139,15 @@ Das Setup legt unter anderem ein eigenes Python Virtual Environment an:
 .venv
 ```
 
-Nach der Einrichtung kann Jarvis per Doppelklick gestartet werden:
+Nach der Einrichtung liegt eine echte macOS-App bereit:
 
 ```text
-Jarvis starten.command
+dist/Jarvis.app
 ```
+
+Diese Datei kann wie jede andere App nach **Programme** gezogen und von dort gestartet werden. Persönliche Daten und Laufzeitdateien liegen dann unter `~/Library/Application Support/Jarvis`, nicht in der App selbst.
+
+Alternativ startet ein Doppelklick auf `Jarvis starten.command` dieselbe App, sobald sie gebaut ist.
 
 Der Starter sucht Hermes automatisch an mehreren Stellen:
 
@@ -151,7 +155,7 @@ Der Starter sucht Hermes automatisch an mehreren Stellen:
 2. über `JARVIS_HERMES`
 3. unter `~/.hermes/installs`
 
-Ist Port `8777` bereits belegt, bricht der Starter ab, anstatt eine zweite kollidierende Instanz zu starten.
+Läuft Jarvis bereits, öffnet der Starter nur erneut das Fenster. Ist Port `8777` von einem anderen Prozess belegt, bricht er ab.
 
 ---
 
@@ -196,7 +200,7 @@ Die jeweilige Stimme kann direkt in den Einstellungen probegehört werden.
 
 Ist die normale Netzwerk-Sprachausgabe nicht verfügbar, kann Jarvis auf die lokale macOS-Stimme **Anna** zurückgreifen.
 
-Beim ersten Start kann macOS nach der Mikrofonberechtigung für das Terminal beziehungsweise den Prozess fragen, über den Jarvis gestartet wurde.
+Beim ersten Start fragt macOS nach der Mikrofonberechtigung für **Jarvis**.
 
 ---
 
@@ -221,11 +225,7 @@ Damit soll verhindert werden, dass eine falsch erkannte oder unbeabsichtigt aufg
 
 Benötigt eine Aktion tatsächlich eine neue Hermes-Freigabe, kann die bestehende Sitzung manuell im Terminal fortgesetzt werden.
 
-Dazu Jarvis zunächst beenden, beispielsweise mit:
-
-```text
-Strg+C
-```
+Dazu Jarvis zunächst über **Beenden** in der Menüleiste stoppen.
 
 Die aktuelle Hermes-Sitzungs-ID wird gespeichert unter:
 

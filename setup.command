@@ -23,5 +23,7 @@ if [ -z "$HERMES" ]; then
   printf 'Hermes wurde nicht gefunden. Bitte Hermes installieren und anmelden, dann PATH prüfen.\n'
   exit 1
 fi
+chmod +x "$ROOT/macos/build_app.sh" "$ROOT/macos/launch_backend.sh"
+"$ROOT/macos/build_app.sh"
 printf 'Bereit. Hermes: %s\n' "$HERMES"
-printf 'Start: Jarvis starten.command\n'
+printf 'App: dist/Jarvis.app — in Programme ziehen oder per Doppelklick starten.\n'

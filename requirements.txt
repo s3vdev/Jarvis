@@ -1,5 +1,5 @@
 numpy
 sounddevice
-faster-whisper
+faster-whisper>=1.1.1
 edge-tts
 

@@ -60,12 +60,14 @@ class BridgeTests(unittest.TestCase):
             client = FakeClient({
                 'ok': True, 'text': 'Hallo', 'session_id': '20260927_220000_abcdef'})
             bridge._client = client
-            with patch('hermes_bridge.subprocess.run', return_value=self._policy()):
+            with patch('hermes_bridge.subprocess.run', return_value=self._policy()), patch('hermes_bridge.load_notes', return_value=''):
                 bridge.ask('Erster Satz.')
                 bridge.ask('Zweiter Satz.')
             self.assertIn('Du bist Jarvis', client.calls[0])
             self.assertNotIn('Hermes-Terminal', client.calls[0])
             self.assertIn('Das geht von hier aus nicht', client.calls[0])
+            self.assertIn('verstehe die Absicht', client.calls[0])
+            self.assertIn('Recherchiere', client.calls[0])
             self.assertNotIn('\n\nErinnerungen, die der Nutzer gespeichert hat:\n', client.calls[0])
             self.assertEqual(client.calls[1], 'Zweiter Satz.')
 

@@ -7,7 +7,31 @@ import re
 import shutil
 
 
-ROOT = Path(__file__).resolve().parents[1]
+def code_root():
+    """Read-only project or app-bundle files. JARVIS_ROOT overrides."""
+    raw = (os.environ.get("JARVIS_ROOT") or "").strip()
+    if raw:
+        try:
+            return Path(raw).expanduser().resolve()
+        except (OSError, RuntimeError):
+            pass
+    return Path(__file__).resolve().parents[1]
+
+
+def data_root():
+    """Writable runtime files. JARVIS_HOME overrides, otherwise the code root."""
+    raw = (os.environ.get("JARVIS_HOME") or "").strip()
+    if raw:
+        try:
+            path = Path(raw).expanduser()
+            path.mkdir(parents=True, exist_ok=True)
+            return path.resolve()
+        except (OSError, RuntimeError):
+            pass
+    return code_root()
+
+
+ROOT = code_root()
 _TOKEN = re.compile(r"^[A-Za-z0-9._:-]{1,64}$")
 _DEFAULTS = {
     "profile": "default",
@@ -46,8 +70,9 @@ def _from_file(path):
 def load_config():
     """Env, then jarvis.local.json, then jarvis.json, then built-in defaults."""
     data = dict(_DEFAULTS)
-    data.update(_from_file(ROOT / "jarvis.json"))
-    data.update(_from_file(ROOT / "jarvis.local.json"))
+    data.update(_from_file(code_root() / "jarvis.json"))
+    data.update(_from_file(code_root() / "jarvis.local.json"))
+    data.update(_from_file(data_root() / "jarvis.local.json"))
     for key, name in _ENV.items():
         cleaned = _clean(os.environ.get(name))
         if cleaned:

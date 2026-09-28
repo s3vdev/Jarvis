@@ -18,11 +18,12 @@ class MacTests(unittest.TestCase):
             def transcribe(self, audio, **kwargs):
                 calls.append(kwargs)
                 return [SimpleNamespace(text=' Guten Morgen.')], None
-        with patch.object(voice, 'load_whisper', return_value=Recognizer()):
+        with patch.object(voice, 'load_whisper', return_value=Recognizer()), patch.object(voice, 'load_notes', return_value=''):
             self.assertEqual(voice.transcribe('test.wav'), 'Guten Morgen.')
-        self.assertEqual(voice.WHISPER_SIZE, 'base')
-        self.assertEqual(calls[0]['beam_size'], 1)
+        self.assertEqual(voice.WHISPER_SIZE, 'large-v3-turbo')
+        self.assertEqual(calls[0]['beam_size'], 5)
         self.assertEqual(calls[0]['language'], 'de')
+        self.assertNotIn('initial_prompt', calls[0])
 
     def test_brain_uses_local_memory_and_default_permissions(self):
         self.assertEqual(Path(voice.VAULT_DIR), ROOT / 'memory')
@@ -31,12 +32,30 @@ class MacTests(unittest.TestCase):
             self.assertEqual(voice.ask_brain('Hallo', True), 'Hallo')
             brain.ask.assert_called_once_with('Hallo')
 
+    def test_questions_go_to_the_model(self):
+        with patch.object(voice, 'handle_command', return_value=(False, 'ok')) as brain:
+            self.assertEqual(
+                voice.handle_turn('suche nach sven mielke aus bergneustadt', True, ''),
+                (False, 'ok'))
+            brain.assert_called_once_with('suche nach sven mielke aus bergneustadt', True)
+
     def test_default_handsfree_without_tty_never_records(self):
         with patch.object(voice.sys, 'argv', ['voice_line.py']), patch.object(voice, 'load_whisper'), patch.object(voice, 'speak'), patch('builtins.input') as pressed, patch.object(voice, 'listen') as listen, patch.object(voice, 'ensure_bus'), patch.object(voice, 'write_state'), patch.object(voice, 'write_status'), patch.object(voice, 'clear_alert'), patch.object(voice, 'wait_while_paused') as paused, patch.object(voice.sys.stdin, 'isatty', return_value=False):
             voice.main()
             listen.assert_not_called()
             pressed.assert_not_called()
             paused.assert_not_called()
+
+    def test_daemon_without_tty_still_listens(self):
+        class FakeStream:
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                return False
+        with patch.object(voice.sys, 'argv', ['voice_line.py', '--daemon']), patch.object(voice, 'load_whisper'), patch.object(voice, 'speak'), patch.object(voice, 'finish_speech'), patch.object(voice, 'HermesBridge'), patch.object(voice, 'listen', side_effect=SystemExit) as listen, patch.object(voice, 'ensure_bus'), patch.object(voice, 'write_state'), patch.object(voice, 'write_status'), patch.object(voice, 'clear_alert'), patch.object(voice, 'is_paused', return_value=False), patch.object(voice, 'wait_while_paused'), patch.object(voice.sys.stdin, 'isatty', return_value=False), patch.object(voice.sd, 'InputStream', return_value=FakeStream()):
+            with self.assertRaises(SystemExit):
+                voice.main()
+            listen.assert_called()
 
     def test_pause_file_closes_the_microphone(self):
         import tempfile
@@ -98,6 +117,7 @@ class MacTests(unittest.TestCase):
         viz.CONFIRM_FILE = str(bus / '.voice_confirm')
         viz.CONFIRM_REPLY_FILE = str(bus / '.voice_confirm_reply')
         viz.USAGE_FILE = str(bus / '.voice_usage')
+        viz.LOAD_FILE = str(bus / '.voice_load')
         viz.set_memory_root(str(bus))
         (bus / '.voice_state').write_text('listening')
         (bus / '.voice_status').write_text('LISTENING')
@@ -108,6 +128,8 @@ class MacTests(unittest.TestCase):
         try:
             html = urllib.request.urlopen('http://127.0.0.1:%d/' % port, timeout=2).read().decode()
             self.assertIn('id="pauseBtn"', html)
+            self.assertIn('id="bootMeter"', html)
+            self.assertIn('id="bootPct"', html)
             self.assertIn('id="gear"', html)
             self.assertIn('ZUHÖREN', html)
             req = urllib.request.Request(
@@ -187,6 +209,12 @@ class MacTests(unittest.TestCase):
             json.loads(urllib.request.urlopen(vote, timeout=2).read())
             self.assertTrue(json.loads((bus / '.voice_confirm_reply').read_text())['accepted'])
             self.assertFalse((bus / '.voice_confirm').read_text() == '')
+            (bus / '.voice_state').write_text('booting')
+            (bus / '.voice_load').write_text('37')
+            (bus / '.voice_status').write_text('Sprachmodell 37%')
+            booting = json.loads(urllib.request.urlopen('http://127.0.0.1:%d/state' % port, timeout=2).read())
+            self.assertEqual(booting['state'], 'booting')
+            self.assertEqual(booting['progress'], 37)
             (bus / '.voice_hermes').write_text(json.dumps({
                 'found': True, 'connected': True, 'profile': 'default',
                 'model': 'gpt-6-astra', 'provider': 'openai-codex'}))
@@ -269,7 +297,30 @@ class MacTests(unittest.TestCase):
         self.assertIn('statusItem', swift)
         self.assertIn('.voice_pause', swift)
         self.assertIn('windowShouldClose', swift)
+        self.assertIn('applicationWillTerminate', swift)
+        self.assertIn('.jarvis.pids', swift)
+        self.assertIn('SIGTERM', swift)
+        self.assertIn('127.0.0.1:8777/state', swift)
+        self.assertIn('--daemon', launcher_text)
+        self.assertIn('nohup', launcher_text)
+        self.assertIn('Menüleiste', launcher_text)
+        self.assertIn('dist/Jarvis.app', launcher_text)
         self.assertFalse((ROOT / '.run/visualizer.pid').exists())
+        plist = (ROOT / 'macos/Info.plist').read_text()
+        self.assertIn('NSMicrophoneUsageDescription', plist)
+        self.assertIn('CFBundleIconFile', plist)
+        self.assertIn('de.s3vdev.jarvis', plist)
+        self.assertTrue((ROOT / 'macos/jarvis-app-icon.png').exists())
+        self.assertTrue((ROOT / 'macos/build_app.sh').exists())
+        self.assertTrue((ROOT / 'macos/launch_backend.sh').exists())
+        backend = (ROOT / 'macos/launch_backend.sh').read_text()
+        self.assertIn('JARVIS_HOME', backend)
+        self.assertIn('JARVIS_ROOT', backend)
+        self.assertNotIn('/Users/svenmielke', backend)
+        self.assertIn('startBackend', swift)
+        self.assertIn('JARVIS_HOME', swift)
+        self.assertIn('launch_backend', swift)
+        self.assertIn('NSMicrophoneUsageDescription', (ROOT / 'macos/Info.plist').read_text())
 
     def test_usage_shows_remaining_without_reset_or_yolo(self):
         spec = importlib.util.spec_from_file_location('viz', ROOT / 'voice-visualizer/server.py')

@@ -8,7 +8,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'voice-line'))
 
-from jarvis_config import find_hermes, load_config, public_hermes
+from jarvis_config import code_root, data_root, find_hermes, load_config, public_hermes
 
 
 class ConfigTests(unittest.TestCase):
@@ -50,6 +50,17 @@ class ConfigTests(unittest.TestCase):
         self.assertTrue(shown['found'])
         self.assertEqual(shown['model'], 'gpt-6-astra')
         self.assertNotIn(';', shown['model'])
+
+    def test_data_root_follows_jarvis_home(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / 'support'
+            env = dict(os.environ)
+            env['JARVIS_HOME'] = str(home)
+            env['JARVIS_ROOT'] = str(ROOT)
+            with patch.dict(os.environ, env, clear=True):
+                self.assertEqual(data_root(), home.resolve())
+                self.assertEqual(code_root(), ROOT.resolve())
+            self.assertTrue(home.is_dir())
 
 
 if __name__ == '__main__':

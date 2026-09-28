@@ -25,6 +25,10 @@ models/
 # Kiosk throwaway profiles
 kiosk-profile/
 
+# Packaged Mac app (contains a full Python venv)
+dist/
+macos/AppIcon.iconset
+
 # OS / editor
 Thumbs.db
 .DS_Store

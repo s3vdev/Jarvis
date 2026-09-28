@@ -12,6 +12,7 @@ Signal bus in ~/voice-line, written here, read-only elsewhere:
 
 Usage:
     python voice_line.py            speak, a pause sends the question
+    python voice_line.py --daemon   same, without a Terminal (menu bar session)
     python voice_line.py --ptt      press-Enter-to-talk mode
     python voice_line.py --check    verify dependencies / mic / brain and exit
 """
@@ -20,6 +21,7 @@ import asyncio
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 import tempfile
@@ -72,17 +74,20 @@ WAVEFORM_FILE = os.path.join(BUS_DIR, ".voice_waveform")
 ALERT_FILE = os.path.join(BUS_DIR, ".voice_alert")
 STATUS_FILE = os.path.join(BUS_DIR, ".voice_status")   # human-readable line shown in the visualizer
 PAUSE_FILE = os.path.join(BUS_DIR, ".voice_pause")     # written by the Mac window; voice line is the only reader
+LOAD_FILE = os.path.join(BUS_DIR, ".voice_load")
 
 # repo root (this file lives in voice-line/) — Jarvis workspace
-BRAIN_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from jarvis_config import code_root, data_root, find_hermes, public_hermes
+CODE_DIR = str(code_root())
+BRAIN_DIR = str(data_root())
 # Local memory folder. Hermes does not read or write it automatically.
 VAULT_DIR = os.path.join(BRAIN_DIR, "memory")
 
-WHISPER_SIZE = "base"                           # tiny often missed German words; base is slower but clearer
+WHISPER_SIZE = "large-v3-turbo"  # German names need more than base; turbo stays quick on Apple Silicon
 
 SAMPLE_RATE = 16000
 VAD_ON = 0.016          # ignore keyboard/room ticks; real speech on this mic was ~0.28
-SILENCE_MS = 520        # a bit more pause so the last word is not cut off
+SILENCE_MS = 640        # keep the last name or city from being cut off
 MIN_SPEECH_S = 0.40     # ignore clicks and short noise before transcription
 MIN_PEAK = 0.028        # a whole clip quieter than this is room noise, not a question
 START_FRAMES = 7        # ~210ms of energy before the orb leaves CONNECTED
@@ -164,6 +169,27 @@ def write_status(msg):
             f.write(msg)
     except OSError:
         pass
+
+
+_load_pct = 0
+
+
+def write_load_progress(pct):
+    """Boot bar in the window. Never decreases so the meter does not jump back."""
+    global _load_pct
+    try:
+        value = max(0, min(100, int(pct)))
+    except (TypeError, ValueError):
+        return
+    if value < _load_pct:
+        return
+    _load_pct = value
+    try:
+        with open(LOAD_FILE, "w", encoding="utf-8") as handle:
+            handle.write(str(value))
+    except OSError:
+        pass
+    write_status("Sprachmodell %d%%" % value)
 
 
 def is_paused():
@@ -446,7 +472,33 @@ def load_whisper():
     global _whisper
     if _whisper is None:
         from faster_whisper import WhisperModel
-        _whisper = WhisperModel(WHISPER_SIZE, device="cpu", compute_type="int8")
+        from faster_whisper.utils import download_model
+
+        stop = threading.Event()
+
+        def _pulse(start, end, wait):
+            value = start
+            while not stop.wait(wait):
+                value = min(end, value + 1)
+                write_load_progress(value)
+
+        write_load_progress(3)
+        downloading = threading.Thread(target=_pulse, args=(5, 85, 0.4), daemon=True)
+        downloading.start()
+        try:
+            model_path = download_model(WHISPER_SIZE)
+        finally:
+            stop.set()
+            downloading.join(timeout=1)
+        write_load_progress(88)
+        stop = threading.Event()
+        pulsing = threading.Thread(target=_pulse, args=(88, 99, 0.28), daemon=True)
+        pulsing.start()
+        try:
+            _whisper = WhisperModel(model_path, device="cpu", compute_type="int8")
+        finally:
+            stop.set()
+        write_load_progress(100)
     return _whisper
 
 
@@ -462,9 +514,18 @@ def _clean_transcript(text):
 
 def transcribe(audio):
     t0 = time.time()
-    segments, _info = load_whisper().transcribe(
-        audio, language="de", beam_size=1, temperature=0.0,
-        vad_filter=False, condition_on_previous_text=False, no_speech_threshold=0.7)
+    kwargs = {
+        "language": "de",
+        "beam_size": 5,
+        "temperature": 0.0,
+        "vad_filter": False,
+        "condition_on_previous_text": False,
+        "no_speech_threshold": 0.7,
+    }
+    notes = load_notes()
+    if notes:
+        kwargs["initial_prompt"] = re.sub(r"\s+", " ", notes)[:200]
+    segments, _info = load_whisper().transcribe(audio, **kwargs)
     parts = []
     for seg in segments:
         # Low-confidence pieces are how room noise and echo become fake commands.
@@ -533,10 +594,9 @@ def command_from_utterance(utterance, last_reply=""):
 
 # --- Brain bridge (Hermes default profile, explicit Jarvis session) ----------
 from hermes_bridge import HermesBridge, BridgeError
-from jarvis_config import find_hermes, public_hermes
 from memory_store import add_note, load_notes, set_memory_root
 from local_skills import (
-    clock_text, execute_action, match_skill, next_volume, public_confirm,
+    clock_text, execute_action, next_volume, public_confirm,
     set_file_roots, timer_phrase,
 )
 set_file_roots((
@@ -544,6 +604,7 @@ set_file_roots((
     os.path.join(os.path.expanduser("~"), "Documents"),
     os.path.join(os.path.expanduser("~"), "Downloads"),
     BRAIN_DIR,
+    CODE_DIR,
 ))
 set_memory_root(BRAIN_DIR)
 _hermes = find_hermes()
@@ -1060,12 +1121,6 @@ def handle_command(utterance, first_turn):
 
 
 def handle_turn(command, first_turn, last_reply):
-    skill = match_skill(command)
-    if skill:
-        print("\n  You: %s" % command)
-        spoken = run_skill(skill, last_reply)
-        show_connected()
-        return False, spoken or last_reply
     return handle_command(command, first_turn)
 
 
@@ -1083,17 +1138,24 @@ def main():
     clear_alert()
     write_state("idle")
     ptt = "--ptt" in sys.argv
+    daemon = "--daemon" in sys.argv
     greet = "--no-greeting" not in sys.argv
     print("=" * 48)
     print(" Jarvis voice line starting.  Ctrl+C to quit.")
     print(" Mode:", "press-Enter" if ptt else "speak, then pause")
     print("=" * 48)
 
+    def _term(_signum, _frame):
+        raise KeyboardInterrupt
+
+    signal.signal(signal.SIGTERM, _term)
+
     # Warm up speech and Hermes together. Hermes stays loaded for later sentences.
     write_state("booting")
     t0 = time.time()
     interactive = sys.stdin.isatty()
-    if interactive:
+    session = interactive or daemon
+    if session:
         global _brain
         _brain = HermesBridge(BRAIN_DIR, executable=_hermes, reuse_session=False)
         write_hermes_status({"found": bool(_hermes), "connected": False})
@@ -1106,7 +1168,7 @@ def main():
         print("[voice] Hermes wird geladen …")
     else:
         write_hermes_status({"found": bool(_hermes), "connected": False})
-    write_status("Loading speech recognition…")
+    write_load_progress(1)
     print("[voice] loading Whisper (%s) ..." % WHISPER_SIZE)
     load_whisper()
     print("\n" + "#" * 48)
@@ -1114,18 +1176,17 @@ def main():
     print("#   " + ("press Enter to talk" if ptt else "einfach sprechen, eine Pause schickt die Frage"))
     print("#" * 48 + "\n")
     show_connected()
-    if interactive and greet:
+    if session and greet:
         write_status(STATUS_READY)
         speak("Jarvis verbunden.")
         finish_speech()
         show_connected()
-    # A closed stdin is the launcher test and other non-interactive runs.
-    # Leave the microphone shut; a real Terminal is a TTY and keeps listening.
+    # A closed stdin is the launcher test unless --daemon keeps the session up.
     first_turn = True
     last_reply = ""
     barge_now = consume_barge()
     try:
-        if not ptt and not interactive:
+        if not ptt and not session:
             print("[voice] kein Terminal — Mikrofon bleibt aus.")
             return
         while True:
@@ -1197,6 +1258,12 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
+        brain = _brain
+        if brain is not None:
+            try:
+                brain._drop_client()
+            except Exception:  # noqa: BLE001
+                pass
         write_state("idle")
         clear_alert()
         print("\n[voice] offline.")
