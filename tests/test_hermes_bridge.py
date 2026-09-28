@@ -29,6 +29,11 @@ class FakeClient:
 
 
 class BridgeTests(unittest.TestCase):
+    def setUp(self):
+        self._search = patch('hermes_bridge.search_web', return_value=[])
+        self._search.start()
+        self.addCleanup(self._search.stop)
+
     def _policy(self):
         return SimpleNamespace(returncode=0, stdout='mode: smart\nsingle_query_mode: deny\n', stderr='')
 
@@ -70,7 +75,7 @@ class BridgeTests(unittest.TestCase):
             self.assertNotIn('Hermes-Terminal', client.calls[0])
             self.assertIn('Das geht von hier aus nicht', client.calls[0])
             self.assertIn('verstehe die Absicht', client.calls[0])
-            self.assertIn('aus deinem Wissen', client.calls[0])
+            self.assertIn('Webtreffer', client.calls[0])
             self.assertNotIn('Recherchiere', client.calls[0])
             self.assertIn('niemals', client.calls[0])
             self.assertNotIn('\n\nErinnerungen, die der Nutzer gespeichert hat:\n', client.calls[0])
@@ -154,6 +159,23 @@ class BridgeTests(unittest.TestCase):
             self.assertEqual(spoken, 'Sven Mielke wird mit Bergneustadt in Verbindung gebracht.')
             self.assertEqual(len(client.calls), 2)
             self.assertIn('ohne Werkzeuge', client.calls[1])
+
+    def test_web_hits_are_attached_to_the_question(self):
+        from hermes_bridge import HermesBridge
+        sid = '20260927_220000_abcdef'
+        with tempfile.TemporaryDirectory(dir=ROOT / '.run') as tmp:
+            bridge = HermesBridge(ROOT, Path(tmp) / 'session.json', executable='/local/hermes')
+            client = FakeClient({
+                'ok': True, 'text': 'Öffentlich mit Bergneustadt verbunden.', 'session_id': sid})
+            bridge._client = client
+            with patch('hermes_bridge.subprocess.run', return_value=self._policy()), patch(
+                    'hermes_bridge.search_web',
+                    return_value=[('Sven Mielke', 'Person aus Bergneustadt.')]):
+                spoken = bridge.ask('Was findest du über Sven Mielke aus Bergneustadt heraus?')
+            self.assertEqual(spoken, 'Öffentlich mit Bergneustadt verbunden.')
+            self.assertIn('Öffentliche Webtreffer', client.calls[0])
+            self.assertIn('Person aus Bergneustadt.', client.calls[0])
+            self.assertNotIn('-z', client.calls[0])
 
     def test_child_env_keeps_approvals_closed(self):
         from hermes_bridge import HermesBridge

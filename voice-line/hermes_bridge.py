@@ -13,6 +13,7 @@ import threading
 
 from jarvis_config import find_hermes, load_config, public_hermes
 from memory_store import load_notes
+from web_search import format_hits, search_web
 
 
 class BridgeError(RuntimeError):
@@ -25,15 +26,15 @@ _PERSONA = (
     'Namen verdreht klingen oder der Satz unvollständig wirkt. '
     'Ergänze Offensichtliches aus dem Gespräch. Frage nur nach, wenn wirklich nichts Sinnvolles erkennbar ist. '
     'Bitte nie darum, etwas einzutippen. Ist die Aufgabe klar, erledige sie. '
-    'Bei Fragen zu Fakten, Personen, Orten, Wetter und Nachrichten: antworte aus deinem Wissen. '
-    'Starte dafür kein Terminal, keinen Browser, kein curl und kein Suchwerkzeug. '
+    'Bei Fragen zu Fakten, Personen, Orten, Wetter und Nachrichten nutze mitgelieferte Webtreffer. '
+    'Die Suche läuft lokal, nicht über Hermes-Werkzeuge. Starte kein Terminal, kein curl, keinen Browser. '
     'Öffne keine Datei und kein Programm per Werkzeug. '
     'Führe nur ausdrücklich angeforderte Aktionen aus. '
     'Behalte alle Hermes-Sicherheitsprüfungen bei. Umgehe niemals eine Verweigerung. '
     'Sag „Das geht von hier aus nicht“ nur, wenn der Nutzer ausdrücklich etwas ändern, öffnen, '
     'installieren oder speichern will und dafür eine Freigabe fehlt. '
-    'Bei einer Frage, Suche oder Auskunft sag diesen Satz niemals. Dann nenne bekannte öffentliche '
-    'Fakten oder sage klar, dass du nichts Sicheres weißt. '
+    'Bei einer Frage, Suche oder Auskunft sag diesen Satz niemals. Stütze dich auf die Webtreffer '
+    'oder sage klar, dass nichts Brauchbares dabei war. Erfinde keine Treffer. '
     'Nicht auf ein Terminal, Hermes-Fenster oder Eintippen verweisen. '
     'Keine Änderung an Hermes-Konfiguration oder Profilen. '
     'Erfinde keine persönlichen Angaben. Nutze nur Erinnerungen, die der Nutzer '
@@ -125,14 +126,20 @@ class HermesBridge:
             raise BridgeError('Hermes wurde nicht gefunden. Bitte Hermes im Terminal prüfen.')
         env = self._child_env()
         self._ensure_approvals([self.executable, '-p', load_config()['profile']], env)
+        user = text
+        hits = search_web(user)
+        extra = ""
+        if hits:
+            extra = "\n\nÖffentliche Webtreffer:\n" + format_hits(hits)
         if not self._introduced:
             self._introduced = True
-            spoken = text
             text = _PERSONA + '\n\nArbeitsordner: ' + str(self.root) + '.'
             notes = load_notes()
             if notes:
                 text += '\n\nErinnerungen, die der Nutzer gespeichert hat:\n' + notes
-            text += '\n\nNutzer: ' + spoken
+            text += '\n\nNutzer: ' + user + extra
+        else:
+            text = user + extra
         reply = self._ensure_client().ask(text)
         self._remember(reply)
         spoken = reply['text'].strip()
