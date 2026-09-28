@@ -1,0 +1,11 @@
+This repository is https://github.com/s3vdev/Jarvis, a fork of
+https://github.com/Sujatx/Jarvis (Sujatx, 2026).
+That upstream repository published no license file. GitHub being public is not a license.
+
+The macOS window, Hermes bridge, German voice line, local skills and setup
+scripts were added later. They are not a grant to copy the original orb,
+signal bus or voice-line structure as if they were original here.
+
+Do not publish this as solely original work. Credit the upstream repository.
+If you want a redistributable license for the whole project, ask the original
+author first. Until then, treat the inherited files as all-rights-reserved.

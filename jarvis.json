@@ -1,0 +1,5 @@
+{
+  "profile": "default",
+  "model": "gpt-6-astra",
+  "provider": "openai-codex"
+}

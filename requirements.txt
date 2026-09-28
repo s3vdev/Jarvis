@@ -1,10 +1,5 @@
-# Voice line dependencies (Component 3)
-numpy               # waveform math
-sounddevice         # microphone capture + audio playback
-faster-whisper      # local speech-to-text, no API key
-openwakeword        # local "Hey Jarvis" wake word, no API key (optional; --ptt works without it)
-pyttsx3             # offline Windows SAPI TTS -> WAV (lets the visualizer breathe with the voice)
+numpy
+sounddevice
+faster-whisper
+edge-tts
 
-# Optional upgrade: nicer neural voices. Returns MP3, so decoding to PCM for the
-# waveform needs ffmpeg — wire it in later if you want it.
-# edge-tts

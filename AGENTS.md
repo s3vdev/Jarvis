@@ -1,0 +1,9 @@
+# Jarvis – lokale macOS-Konfiguration
+
+Jarvis verwendet das Hermes aus `jarvis.json` (Standard: Profil default, gpt-6-astra, openai-codex), nicht Claude. Andere Rechner überschreiben das lokal, ohne Tokens ins Repo. Antworte kurz und natürlich auf Deutsch. Behaupte nur nachgewiesene Aktionen.
+
+Die Sprach-Bridge verwendet --ignore-rules, übernimmt diese Datei also nicht automatisch; ihre minimalen Regeln stehen ausdrücklich im Bridge-Prompt. Gedächtnisordner: ./memory, ohne automatische Lese- oder Schreibaktionen. Keine persönlichen Angaben erfinden oder Geheimnisse speichern. Globale Hermes-Konfiguration und andere Profile bleiben unberührt.
+
+Sicherheit: keine Freigabeumgehung, kein -z und kein --yolo. Nur angeforderte Aktionen ausführen. Wenn eine Freigabe fehlt, nur sagen, dass es von hier aus nicht geht. Nicht auf ein Hermes-Terminal verweisen. Dateien und Programme nur nach Ja im Jarvis-Fenster öffnen. Keine alternative Umgehung nach einer Verweigerung. Die Shell ist keine OS-Sandbox.
+
+Tests: `.venv/bin/python -m unittest discover -s tests -v`. `tests/smoke_hermes.py` macht ausdrücklich echte Modellanfragen; nur bei beabsichtigtem Kontoverbrauch starten. Im Terminal einfach sprechen, kein Enter. Der Name ist optional, außer in den Einstellungen steht „nur mit Jarvis“. Eine Sprechpause schickt die Frage. Während er spricht, darf man ihm ins Wort fallen. Uhr, Timer, Lautstärke und „nochmal“ bleiben lokal. Safari und ähnliche Apps nur nach Ja im Fenster. Hermes-Freigaben niemals im Fenster bestätigen. Nutzung kommt nur von `hermes usage --json`, ohne `-z`. PAUSE oder das Wort Stopp schließt das Mikrofon und bricht die Stimme ab. Das Icon bleibt in der Menüleiste, auch wenn das Fenster zu ist. Ganz kurze Geräusche gehen nicht an Hermes. Ohne Terminal (kein TTY) bleibt das Mikrofon aus.

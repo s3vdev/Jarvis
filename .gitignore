@@ -1,3 +1,8 @@
+# Local runtime transcripts, audio and scoped helper packages
+.run/
+.tools/
+jarvis.local.json
+
 # Python
 __pycache__/
 *.pyc

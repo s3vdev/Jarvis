@@ -8,27 +8,157 @@
   html, body { margin: 0; height: 100%; background: #05060a; overflow: hidden; }
   #scene { display: block; width: 100vw; height: 100vh; }
   #hud { position: fixed; left: 10px; bottom: 8px; font: 11px/1.4 ui-monospace, Consolas, monospace;
-    color: #ffcf7a; opacity: .5; letter-spacing: .5px; pointer-events: none; text-shadow: 0 0 6px #f90; }
+    color: #ffcf7a; opacity: 0; letter-spacing: .5px; pointer-events: none; text-shadow: 0 0 6px #f90; }
   #fps { position: fixed; right: 10px; top: 8px; font: 11px/1.4 ui-monospace, monospace; color: #ffcf7a;
     opacity: 0; pointer-events: none; }
-  #status { position: fixed; inset: 0; display: none; flex-direction: column; gap: 14px;
-    align-items: center; justify-content: center; text-align: center; pointer-events: none;
-    color: #ffe6b0; text-shadow: 0 0 22px #f80; letter-spacing: 3px; }
-  #status .big { font: 700 clamp(30px,6vw,66px)/1 ui-monospace, Consolas, monospace; }
-  #status .sub { font: 500 clamp(13px,2vw,20px)/1.4 ui-monospace, monospace; opacity: .85; letter-spacing: 2px; }
+  #status { position: fixed; top: 5.5vh; left: 0; right: 0; display: flex; flex-direction: column;
+    gap: 10px; align-items: center; text-align: center; pointer-events: none;
+    color: #ffe6b0; text-shadow: 0 0 18px rgba(255, 140, 0, .9); }
+  #status .big { font: 600 clamp(22px, 4.2vw, 46px)/1 ui-monospace, Consolas, monospace;
+    letter-spacing: .48em; padding-left: .48em; }
+  #status .sub { display: flex; align-items: center; gap: 10px;
+    font: 500 clamp(12px, 1.6vw, 18px)/1 ui-monospace, Consolas, monospace;
+    letter-spacing: .42em; padding-left: .42em; opacity: .95; }
+  #status .dot { width: 9px; height: 9px; border-radius: 50%; background: #6d6d6d;
+    box-shadow: 0 0 8px #444; flex: none; }
+  #status .dot.on { background: #3dff9a; box-shadow: 0 0 12px #3dff9a; }
+  #status .dot.bad { background: #ff453a; box-shadow: 0 0 12px #ff453a; }
+  #status .detail { min-height: 1em; font: 400 12px/1.3 ui-monospace, Consolas, monospace;
+    letter-spacing: 1px; opacity: .7; }
+  #controls { position: fixed; left: 0; right: 0; bottom: 18px; display: flex; gap: 10px;
+    justify-content: center; pointer-events: none; }
+  #controls button { pointer-events: auto; appearance: none; border: 1px solid rgba(255,207,122,.45);
+    background: rgba(8,10,16,.72); color: #ffe6b0; border-radius: 999px; padding: 8px 16px;
+    font: 600 12px/1 ui-monospace, Consolas, monospace; letter-spacing: .12em; cursor: pointer; }
+  #controls button:hover { border-color: #ffcf7a; }
+  #controls button.on { background: rgba(255, 69, 58, .18); border-color: #ff453a; color: #ffd0cc; }
+  #gear { position: fixed; top: 14px; right: 14px; width: 34px; height: 34px; border-radius: 50%;
+    appearance: none; border: 1px solid rgba(255,207,122,.28); background: rgba(8,10,16,.45);
+    color: #ffe6b0; font: 16px/1 sans-serif; cursor: pointer; opacity: .55; }
+  #gear:hover, #gear.open { opacity: 1; border-color: #ffcf7a; }
+  #panel { display: none; position: fixed; top: 56px; right: 14px; width: 280px;
+    max-height: calc(100vh - 72px); overflow-y: auto;
+    padding: 14px 14px 12px; border-radius: 14px; background: rgba(8,10,16,.88);
+    border: 1px solid rgba(255,207,122,.28); color: #ffe6b0;
+    font: 12px/1.4 ui-monospace, Consolas, monospace; }
+  #panel.open { display: block; }
+  #panel label { display: block; margin: 0 0 6px; letter-spacing: .08em; opacity: .75; }
+  #panel select { width: 100%; margin: 0 0 12px; appearance: none; border-radius: 8px;
+    border: 1px solid rgba(255,207,122,.35); background: rgba(5,6,10,.8); color: #ffe6b0;
+    padding: 7px 8px; font: inherit; }
+  #panel button { appearance: none; width: 100%; border-radius: 8px; padding: 7px 8px;
+    border: 1px solid rgba(255,207,122,.35); background: transparent; color: #ffe6b0;
+    font: inherit; letter-spacing: .08em; cursor: pointer; }
+  #panel button:hover { border-color: #ffcf7a; }
+  #previewBtn { margin: -4px 0 12px; }
+  #usageBox { margin: 0 0 8px; padding: 10px 10px 8px; border-radius: 8px;
+    border: 1px solid rgba(255,207,122,.22); background: rgba(5,6,10,.45); }
+  #usagePlan { margin: 0 0 10px; letter-spacing: .06em; }
+  #usageWindows { display: flex; flex-direction: column; gap: 10px; }
+  .usageRow { display: flex; flex-direction: column; gap: 4px; }
+  .usageMeta { display: flex; justify-content: space-between; gap: 8px; }
+  .usageMeta .pct { color: #3dff9a; }
+  .usageMeta .pct.mid { color: #ffcf7a; }
+  .usageMeta .pct.low { color: #ff8a7a; }
+  .usageTrack { height: 7px; border-radius: 999px; background: rgba(255,207,122,.12);
+    overflow: hidden; }
+  .usageFill { height: 100%; width: 0; border-radius: inherit;
+    background: linear-gradient(90deg, #c8963a, #ffe08a); }
+  .usageFill.mid { background: linear-gradient(90deg, #c87a2a, #ffcf7a); }
+  .usageFill.low { background: linear-gradient(90deg, #b33a2a, #ff8a7a); }
+  .usageReset { font-size: 11px; opacity: .65; }
+  #usageNote { margin: 8px 0 0; opacity: .7; line-height: 1.4; }
+  #usageBtn { margin: 0 0 12px; }
+  #hermesBox { margin: 0 0 12px; padding: 8px 9px; border-radius: 8px;
+    border: 1px solid rgba(255,207,122,.22); background: rgba(5,6,10,.45); }
+  #hermesBox .line, #usageBox .line { margin: 0 0 4px; }
+  #hermesBox .ok { color: #3dff9a; }
+  #hermesBox .bad { color: #ff8a7a; }
+  #hermesBox .muted { opacity: .7; }
+  #hermesHint { display: none; margin: 6px 0 0; line-height: 1.45; color: #ffc8b8; }
+  #hermesHint.show { display: block; }
   #subtitle { position: fixed; left: 0; right: 0; bottom: 7%; padding: 0 8%; text-align: center;
     font: 500 clamp(14px,2.2vw,24px)/1.5 ui-monospace, Consolas, monospace; color: #ffe9c8;
     text-shadow: 0 0 12px #d70; opacity: 0; transition: opacity .25s; pointer-events: none; }
   #err { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; text-align:center;
     color: #ffcf7a; font: 500 16px/1.6 ui-monospace, monospace; padding: 2em; }
+  #confirm { display: none; position: fixed; left: 50%; top: 58%; transform: translate(-50%, -50%);
+    width: min(320px, 84vw); padding: 16px 16px 14px; border-radius: 14px;
+    background: rgba(8,10,16,.92); border: 1px solid rgba(255,207,122,.4);
+    color: #ffe6b0; font: 13px/1.45 ui-monospace, Consolas, monospace; z-index: 5; }
+  #confirm.show { display: block; }
+  #confirm .title { margin: 0 0 8px; letter-spacing: .06em; }
+  #confirm .detail { margin: 0 0 14px; opacity: .8; word-break: break-word; }
+  #confirm .row { display: flex; gap: 8px; }
+  #confirm button { flex: 1; appearance: none; border-radius: 999px; padding: 8px 10px;
+    border: 1px solid rgba(255,207,122,.4); background: transparent; color: #ffe6b0;
+    font: 600 12px/1 ui-monospace, monospace; letter-spacing: .1em; cursor: pointer; }
+  #confirm #confirmYes { border-color: #3dff9a; color: #b8ffd6; }
+  #confirm.notice #confirmYes { display: none; }
+  #confirm.notice #confirmNo { border-color: #ffcf7a; }
 </style>
 </head>
 <body>
 <canvas id="scene"></canvas>
 <div id="hud">state: idle</div>
 <div id="fps">-- fps</div>
-<div id="status"><div class="big">JARVIS</div><div class="sub">initializing…</div></div>
+<div id="status"><div class="big">J.A.R.V.I.S</div><div class="sub"><span class="dot"></span><span class="label">CONNECTED</span></div><div class="detail"></div></div>
+<div id="controls">
+  <button id="pauseBtn" type="button">PAUSE</button>
+  <button id="listenBtn" type="button">ZUHÖREN</button>
+</div>
+<button id="gear" type="button" aria-label="Einstellungen">⚙</button>
+<div id="panel">
+  <label>HERMES</label>
+  <div id="hermesBox">
+    <div class="line" id="hermesFound">Agent: …</div>
+    <div class="line" id="hermesConn">Verbindung: …</div>
+    <div class="line muted" id="hermesModel"></div>
+    <div class="line" id="hermesHint">Hermes Agent oder Desktop ist noch nicht installiert, oder der Befehl hermes fehlt im Terminal. Installieren, einmal im Terminal prüfen, dann Jarvis neu starten.</div>
+  </div>
+  <label>NUTZUNG</label>
+  <div id="usageBox">
+    <div id="usagePlan">OpenAI Codex</div>
+    <div id="usageWindows"></div>
+    <div id="usageNote"></div>
+  </div>
+  <button id="usageBtn" type="button">AKTUALISIEREN</button>
+  <label for="voiceSel">STIMME</label>
+  <select id="voiceSel"></select>
+  <button id="previewBtn" type="button">PROBE</button>
+  <label for="senseSel">MIKROFON</label>
+  <select id="senseSel">
+    <option value="leise">empfindlich</option>
+    <option value="normal">normal</option>
+    <option value="fest">weniger empfindlich</option>
+  </select>
+  <label for="wakeSel">RUFNAME</label>
+  <select id="wakeSel">
+    <option value="aus">immer zuhören</option>
+    <option value="an">nur mit Jarvis</option>
+  </select>
+  <label for="volSel">LAUTSTÄRKE</label>
+  <select id="volSel">
+    <option value="leise">leise</option>
+    <option value="normal">normal</option>
+    <option value="laut">laut</option>
+  </select>
+  <label for="animSel">ANIMATION</label>
+  <select id="animSel">
+    <option value="kugel">Kugel · Netz</option>
+    <option value="radar">Radar · Ringe</option>
+    <option value="iris">Iris · ruhig</option>
+  </select>
+</div>
 <div id="subtitle"></div>
+<div id="confirm" role="dialog" aria-live="polite">
+  <div class="title" id="confirmTitle"></div>
+  <div class="detail" id="confirmDetail"></div>
+  <div class="row">
+    <button id="confirmNo" type="button">NEIN</button>
+    <button id="confirmYes" type="button">JA</button>
+  </div>
+</div>
 <div id="err">WebGL unavailable in this browser/window.</div>
 <script>
 "use strict";
@@ -55,7 +185,17 @@
   const hudEl = document.getElementById("hud");
   const fpsEl = document.getElementById("fps");
   const statusEl = document.getElementById("status");
-  const statusSub = statusEl.querySelector(".sub");
+  const statusLabel = statusEl.querySelector(".label");
+  const statusDot = statusEl.querySelector(".dot");
+  const statusDetail = statusEl.querySelector(".detail");
+  const BADGE = {
+    booting: "INITIALIZING",
+    idle: "CONNECTED",
+    listening: "LISTENING",
+    thinking: "PROCESSING",
+    speaking: "SPEAKING",
+    paused: "PAUSED",
+  };
   const subEl = document.getElementById("subtitle");
   const DPR = Math.min(1.25, window.devicePixelRatio || 1);
 
@@ -81,12 +221,27 @@
   // ---------------- Shared vertex transform ----------------
   const XFORM = `
     uniform mat3 u_rot;
-    uniform float u_scale, u_aspect, u_time, u_level, u_converge, u_assemble, u_jitter;
+    uniform float u_scale, u_aspect, u_time, u_level, u_converge, u_assemble, u_jitter, u_think, u_speak, u_anim;
     vec3 place(vec3 sphere, vec3 rnd, float phase) {
       vec3 base = mix(rnd * 1.4, sphere, u_assemble);
-      float breath = 1.0 + 0.05 * sin(u_time * 1.4 + phase) + 0.16 * u_level;
-      base *= mix(1.0, 0.82, u_converge) * breath;
-      base += u_jitter * vec3(sin(phase*12.0+u_time*9.0), cos(phase*7.0+u_time*8.0), sin(phase*3.0+u_time*7.0)) * 0.035;
+      float thinkWave = 0.05 * u_think * sin(u_time * 6.4 + phase * 18.0);
+      float speakGrow = 0.09 * u_speak * u_level;
+      float breathAmp = 0.04;
+      float jitterAmp = 0.035;
+      if (u_anim > 1.5) {
+        thinkWave = 0.018 * u_think * sin(u_time * 2.1 + phase * 5.0);
+        speakGrow = 0.045 * u_speak * u_level;
+        breathAmp = 0.022;
+        jitterAmp = 0.012;
+      } else if (u_anim > 0.5) {
+        thinkWave = 0.03 * u_think * sin(u_time * 9.5 + phase * 2.2);
+        speakGrow = 0.06 * u_speak * u_level;
+        breathAmp = 0.02;
+        jitterAmp = 0.018;
+      }
+      float breath = 1.0 + breathAmp * sin(u_time * 1.4 + phase) + 0.08 * u_level + thinkWave + speakGrow;
+      base *= mix(1.0, 0.78, u_converge) * breath;
+      base += u_jitter * vec3(sin(phase*12.0+u_time*9.0), cos(phase*7.0+u_time*8.0), sin(phase*3.0+u_time*7.0)) * jitterAmp;
       return u_rot * base;
     }
     vec4 clipOf(vec3 p) { return vec4(p.x * u_scale / u_aspect, p.y * u_scale, 0.0, 1.0); }
@@ -147,14 +302,34 @@
   const quadVS = `attribute vec2 a_p; varying vec2 v_uv;
     void main(){ v_uv = a_p; gl_Position = vec4(a_p, 0.0, 1.0); }`;
   const coreFS = `precision highp float; varying vec2 v_uv;
-    uniform float u_aspect, u_core, u_level, u_hue, u_time; uniform vec3 u_colA, u_colB;
+    uniform float u_aspect, u_core, u_level, u_hue, u_time, u_think, u_speak, u_anim; uniform vec3 u_colA, u_colB;
     void main(){
       vec2 uv = v_uv; uv.x *= u_aspect;
       float d = length(uv);
       float pulse = 0.85 + 0.15 * sin(u_time * 2.0);
-      float core = exp(-d * d * 9.0) * (u_core * (0.45 + 0.45 * u_level)) * pulse;
-      float halo = exp(-d * d * 1.9) * 0.06 * u_core;
-      gl_FragColor = vec4(mix(u_colA, u_colB, u_hue) * (core + halo), 1.0);
+      float core = exp(-d * d * 9.0) * (u_core * (0.38 + 0.22 * u_level)) * pulse;
+      float halo = exp(-d * d * 2.4) * 0.045 * u_core;
+      float scanR = fract(u_time * 0.48);
+      float ring = abs(d - (0.10 + 0.36 * scanR));
+      float scan = exp(-ring * ring * 120.0) * u_think * 0.32;
+      float voice = exp(-d * d * mix(10.0, 3.6, u_level)) * u_speak * (0.08 + 0.28 * u_level);
+      if (u_anim > 1.5) {
+        core = exp(-d * d * 18.0) * (u_core * (0.55 + 0.18 * u_level)) * (0.88 + 0.12 * sin(u_time * 1.6));
+        halo = exp(-d * d * 3.2) * 0.07 * u_core;
+        float iris = abs(d - (0.14 + 0.03 * u_level));
+        scan = exp(-iris * iris * 220.0) * (0.18 + 0.35 * u_think + 0.22 * u_speak);
+        voice = exp(-d * d * 8.0) * u_speak * (0.06 + 0.16 * u_level);
+      } else if (u_anim > 0.5) {
+        core = exp(-d * d * 14.0) * (u_core * (0.22 + 0.14 * u_level)) * pulse;
+        halo = exp(-d * d * 1.6) * 0.03 * u_core;
+        float sweep = fract(u_time * 0.42);
+        float r1 = abs(d - sweep);
+        float r2 = abs(d - fract(sweep + 0.34));
+        scan = (exp(-r1 * r1 * 260.0) * 0.72 + exp(-r2 * r2 * 260.0) * 0.34)
+          * (0.22 + 0.55 * u_think + 0.35 * u_speak + 0.18 * u_level);
+        voice = exp(-d * d * 12.0) * u_speak * (0.05 + 0.14 * u_level);
+      }
+      gl_FragColor = vec4(mix(u_colA, u_colB, u_hue) * (core + halo + scan + voice), 1.0);
     }`;
 
   const P_POINT = program(pointVS, pointFS);
@@ -235,27 +410,39 @@
     gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
   }
 
-  const GOLD_A = [1.0, 0.78, 0.36], GOLD_B = [1.0, 0.30, 0.16];
+  const PALETTES = {
+    kugel: { a: [1.0, 0.78, 0.36], b: [1.0, 0.30, 0.16] },
+    radar: { a: [0.72, 0.92, 1.0], b: [0.25, 0.72, 0.95] },
+    iris:  { a: [1.0, 0.72, 0.28], b: [0.95, 0.42, 0.12] },
+  };
+  const ANIM_ID = { kugel: 0, radar: 1, iris: 2 };
+  let curAnim = "kugel";
+  function palette() { return PALETTES[curAnim] || PALETTES.kugel; }
+  function animId() { return ANIM_ID[curAnim] || 0; }
 
   // ---------------- State + eased energy ----------------
   const STATES = {
     booting:   { motion: 0.18, glow: 0.60, signal: 0.50, converge: 0.10, hue: 0.0, core: 0.5, jitter: 0.15 },
     idle:      { motion: 0.07, glow: 0.55, signal: 0.20, converge: 0.00, hue: 0.0, core: 0.45, jitter: 0.05 },
     listening: { motion: 0.12, glow: 0.85, signal: 0.30, converge: 0.50, hue: 0.0, core: 0.65, jitter: 0.05 },
-    thinking:  { motion: 0.40, glow: 0.85, signal: 1.00, converge: 0.05, hue: 0.0, core: 0.70, jitter: 0.35 },
-    speaking:  { motion: 0.15, glow: 1.00, signal: 0.55, converge: 0.00, hue: 0.0, core: 1.00, jitter: 0.08 },
+    thinking:  { motion: 0.55, glow: 0.80, signal: 0.70, converge: 0.35, hue: 0.06, core: 0.62, jitter: 0.22 },
+    speaking:  { motion: 0.16, glow: 0.85, signal: 0.50, converge: 0.00, hue: 0.04, core: 0.72, jitter: 0.08 },
     alert:     { motion: 0.30, glow: 1.00, signal: 0.80, converge: 0.00, hue: 1.0, core: 1.00, jitter: 0.40 },
   };
   const E = { motion: .07, glow: .55, signal: .2, converge: 0, hue: 0, core: .45, jitter: .05 };
-  let curState = "idle", alertOn = false, curStatus = "";
+  let thinkAmt = 0, speakAmt = 0;
+  let curState = "idle", alertOn = false, curStatus = "", pausedOn = false;
   let levelTarget = 0, level = 0, yaw = 0, pitch = 0.35;
-  let lastOverlayState = null, lastOverlayStatus = null;
+  let lastOverlayState = null, lastOverlayStatus = null, lastOverlayAlert = null, lastOverlayPaused = null;
 
   function ease(cur, tgt, dt) { const tau = tgt > cur ? 0.5 : 1.0; return cur + (tgt - cur) * (1 - Math.exp(-dt / tau)); }
   function applyTargets(dt) {
     const s = STATES[curState] || STATES.idle;
     for (const k in E) E[k] = ease(E[k], alertOn && k === "hue" ? 1.0 : s[k], dt);
     level = level + (levelTarget - level) * (1 - Math.exp(-dt / 0.09));
+    const live = !pausedOn && !alertOn;
+    thinkAmt += (((live && curState === "thinking") ? 1 : 0) - thinkAmt) * (1 - Math.exp(-dt / 0.16));
+    speakAmt += (((live && curState === "speaking") ? 1 : 0) - speakAmt) * (1 - Math.exp(-dt / 0.10));
   }
   function signalSpeed() { return 0.10 + 1.35 * E.signal + 0.9 * level; }
 
@@ -272,11 +459,14 @@
     gl.uniform1f(gl.getUniformLocation(prog, "u_converge"), E.converge);
     gl.uniform1f(gl.getUniformLocation(prog, "u_assemble"), assemble);
     gl.uniform1f(gl.getUniformLocation(prog, "u_jitter"), E.jitter);
+    gl.uniform1f(gl.getUniformLocation(prog, "u_think"), thinkAmt);
+    gl.uniform1f(gl.getUniformLocation(prog, "u_speak"), speakAmt);
+    gl.uniform1f(gl.getUniformLocation(prog, "u_anim"), animId());
     gl.uniform1f(gl.getUniformLocation(prog, "u_glow"), E.glow);
     gl.uniform1f(gl.getUniformLocation(prog, "u_hue"), E.hue);
     gl.uniform1f(gl.getUniformLocation(prog, "u_signalSpeed"), signalSpeed());
-    gl.uniform3fv(gl.getUniformLocation(prog, "u_colA"), GOLD_A);
-    gl.uniform3fv(gl.getUniformLocation(prog, "u_colB"), GOLD_B);
+    gl.uniform3fv(gl.getUniformLocation(prog, "u_colA"), palette().a);
+    gl.uniform3fv(gl.getUniformLocation(prog, "u_colB"), palette().b);
   }
 
   // ---------------- Layout ----------------
@@ -301,15 +491,18 @@
     gl.uniform1f(gl.getUniformLocation(P_CORE, "u_level"), level);
     gl.uniform1f(gl.getUniformLocation(P_CORE, "u_hue"), E.hue);
     gl.uniform1f(gl.getUniformLocation(P_CORE, "u_time"), t);
-    gl.uniform3fv(gl.getUniformLocation(P_CORE, "u_colA"), GOLD_A);
-    gl.uniform3fv(gl.getUniformLocation(P_CORE, "u_colB"), GOLD_B);
+    gl.uniform1f(gl.getUniformLocation(P_CORE, "u_think"), thinkAmt);
+    gl.uniform1f(gl.getUniformLocation(P_CORE, "u_speak"), speakAmt);
+    gl.uniform1f(gl.getUniformLocation(P_CORE, "u_anim"), animId());
+    gl.uniform3fv(gl.getUniformLocation(P_CORE, "u_colA"), palette().a);
+    gl.uniform3fv(gl.getUniformLocation(P_CORE, "u_colB"), palette().b);
     attrib(P_CORE, "a_p", B.quad, 2);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
     // synapse connections (curved, firing pulses)
     gl.useProgram(P_LINE);
     setCommon(P_LINE, t);
-    gl.uniform1f(gl.getUniformLocation(P_LINE, "u_intensity"), 0.85);
+    gl.uniform1f(gl.getUniformLocation(P_LINE, "u_intensity"), curAnim === "iris" ? 0.22 : curAnim === "radar" ? 0.42 : 0.85);
     attrib(P_LINE, "a_pos", B.lpos, 3); attrib(P_LINE, "a_rnd", B.lrnd, 3);
     attrib(P_LINE, "a_phase", B.lph, 1); attrib(P_LINE, "a_seg", B.lsg, 1); attrib(P_LINE, "a_cphase", B.lcp, 1);
     gl.drawArrays(gl.LINES, 0, lineCount);
@@ -321,7 +514,7 @@
     attrib(P_POINT, "a_pos", B.pos, 3); attrib(P_POINT, "a_rnd", B.rnd, 3);
     attrib(P_POINT, "a_phase", B.phase, 1); attrib(P_POINT, "a_shell", B.shell, 1);
     gl.uniform1f(gl.getUniformLocation(P_POINT, "u_halo"), 1.0);
-    gl.uniform1f(gl.getUniformLocation(P_POINT, "u_intensity"), 0.32);
+    gl.uniform1f(gl.getUniformLocation(P_POINT, "u_intensity"), curAnim === "iris" ? 0.14 : 0.32);
     gl.drawArrays(gl.POINTS, 0, N);
     gl.uniform1f(gl.getUniformLocation(P_POINT, "u_halo"), 0.0);
     gl.uniform1f(gl.getUniformLocation(P_POINT, "u_intensity"), 0.9);
@@ -330,30 +523,93 @@
 
   function step(dt, t) {
     applyTargets(dt);
-    yaw += dt * (0.05 + 0.5 * E.motion);
-    pitch = 0.30 + 0.10 * Math.sin(t * 0.2);
+    if (pausedOn) {
+      yaw += dt * 0.04;
+    } else if (curAnim === "radar") {
+      yaw += dt * (curState === "thinking" ? 0.22 : 0.08);
+      pitch = 0.18 + 0.04 * Math.sin(t * 0.7);
+      if (curState === "thinking") levelTarget = 0.16 + 0.10 * Math.abs(Math.sin(t * 2.4));
+    } else if (curAnim === "iris") {
+      yaw += dt * (curState === "speaking" ? 0.08 + 0.18 * level : 0.03);
+      pitch = 0.32 + 0.03 * Math.sin(t * 0.35);
+      if (curState === "thinking") levelTarget = 0.14 + 0.06 * Math.abs(Math.sin(t * 1.6));
+    } else if (curState === "thinking") {
+      yaw += dt * (0.55 + 0.18 * Math.sin(t * 2.2));
+      pitch = 0.26 + 0.10 * Math.sin(t * 1.6);
+      levelTarget = 0.20 + 0.10 * Math.abs(Math.sin(t * 3.2));
+      E.converge = 0.22 + 0.20 * (0.5 + 0.5 * Math.sin(t * 2.4));
+      E.jitter = 0.10 + 0.14 * (0.5 + 0.5 * Math.sin(t * 4.0));
+    } else if (curState === "speaking") {
+      yaw += dt * (0.10 + 0.45 * level);
+      pitch = 0.28 + 0.06 * Math.sin(t * 1.5) * (0.4 + level);
+    } else {
+      yaw += dt * (0.05 + 0.5 * E.motion);
+      pitch = 0.30 + 0.10 * Math.sin(t * 0.2);
+    }
     if (assemble < 1) assemble = Math.min(1, assemble + dt / 1.5);
   }
 
   // ---------------- Overlays ----------------
   function updateOverlays() {
-    if (curState === lastOverlayState && curStatus === lastOverlayStatus) return;
+    if (curState === lastOverlayState && curStatus === lastOverlayStatus &&
+        alertOn === lastOverlayAlert && pausedOn === lastOverlayPaused) return;
     lastOverlayState = curState; lastOverlayStatus = curStatus;
-    statusEl.style.display = (curState === "booting") ? "flex" : "none";
-    if (curState === "booting") statusSub.textContent = curStatus || "initializing…";
-    const showSub = curStatus && (curState === "listening" || curState === "thinking" || curState === "speaking");
+    lastOverlayAlert = alertOn; lastOverlayPaused = pausedOn;
+    statusEl.style.display = "flex";
+    const label = alertOn ? "ALERT" : pausedOn ? "PAUSED" : (BADGE[curState] || "CONNECTED");
+    statusLabel.textContent = label;
+    statusDot.className = "dot" + (label === "CONNECTED" ? " on" : (label === "ALERT" || label === "PAUSED") ? " bad" : "");
+    statusDetail.textContent = curState === "booting" ? (curStatus || "initializing…") : "";
+    const showSub = !pausedOn && curStatus && curStatus !== "JARVIS CONNECTED" &&
+      (curState === "listening" || curState === "thinking" || curState === "speaking");
     subEl.textContent = showSub ? curStatus : "";
     subEl.style.opacity = showSub ? "1" : "0";
+    const pauseBtn = document.getElementById("pauseBtn");
+    const listenBtn = document.getElementById("listenBtn");
+    if (pauseBtn) pauseBtn.className = pausedOn ? "on" : "";
+    if (listenBtn) listenBtn.className = pausedOn ? "" : "on";
   }
 
   // ---------------- Polling ----------------
   let lastOk = performance.now();
+  let confirmId = "";
+  const confirmEl = document.getElementById("confirm");
+  const confirmTitle = document.getElementById("confirmTitle");
+  const confirmDetail = document.getElementById("confirmDetail");
+  const confirmYes = document.getElementById("confirmYes");
+  const confirmNo = document.getElementById("confirmNo");
+  function showConfirm(info) {
+    if (!confirmEl) return;
+    if (!info || !info.id) {
+      confirmId = "";
+      confirmEl.className = "";
+      return;
+    }
+    confirmId = String(info.id);
+    if (confirmTitle) confirmTitle.textContent = info.title || "Bestätigen?";
+    if (confirmDetail) confirmDetail.textContent = info.detail || "";
+    confirmEl.className = info.kind === "notice" ? "show notice" : "show";
+    if (confirmNo) confirmNo.textContent = info.kind === "notice" ? "OK" : "NEIN";
+  }
+  function voteConfirm(accepted) {
+    if (!confirmId) return;
+    fetch("/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: confirmId, accepted: !!accepted }),
+    }).catch(() => {});
+  }
+  if (confirmYes) confirmYes.addEventListener("click", () => voteConfirm(true));
+  if (confirmNo) confirmNo.addEventListener("click", () => voteConfirm(false));
   function poll() {
     fetch("/state", { cache: "no-store" }).then(r => r.json()).then(d => {
       lastOk = performance.now();
       curState = STATES[d.state] ? d.state : "idle";
-      alertOn = !!d.alert; curStatus = d.status || "";
-      levelTarget = Math.max(0, Math.min(1, d.level || 0));
+      alertOn = !!d.alert; pausedOn = !!d.paused; curStatus = d.status || "";
+      if (d.hermes) fillHermes(d.hermes);
+      showConfirm(d.confirm);
+      if (pausedOn) levelTarget = 0;
+      else if (d.state !== "thinking") levelTarget = Math.max(0, Math.min(1, d.level || 0));
     }).catch(() => {});
   }
   if (!SHOT && !MOCKSTATE) setInterval(poll, 100);
@@ -369,8 +625,9 @@
     let dt = (now - last) / 1000; last = now; if (dt > 0.05) dt = 0.05;
     if (MOCKSTATE) {
       const tt = now / 1000;
-      levelTarget = MOCKSTATE === "speaking" ? 0.5 + 0.45 * Math.abs(Math.sin(tt * 3.2))
-                  : MOCKSTATE === "listening" ? 0.25 + 0.1 * Math.abs(Math.sin(tt * 4)) : 0;
+      if (MOCKSTATE === "speaking") levelTarget = 0.5 + 0.45 * Math.abs(Math.sin(tt * 3.2));
+      else if (MOCKSTATE === "listening") levelTarget = 0.25 + 0.1 * Math.abs(Math.sin(tt * 4));
+      else if (MOCKSTATE !== "thinking") levelTarget = 0;
     } else if (!SHOT && performance.now() - lastOk > 1500) {
       curState = "idle"; alertOn = false; levelTarget = 0;
     }
@@ -399,9 +656,204 @@
   }
 
   // ---------------- Boot ----------------
+  function setPaused(next) {
+    pausedOn = !!next;
+    updateOverlays();
+    fetch("/pause", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paused: pausedOn }),
+    }).catch(() => {});
+  }
+  const pauseBtn = document.getElementById("pauseBtn");
+  const listenBtn = document.getElementById("listenBtn");
+  if (pauseBtn) pauseBtn.addEventListener("click", () => setPaused(true));
+  if (listenBtn) listenBtn.addEventListener("click", () => setPaused(false));
+  const gear = document.getElementById("gear");
+  const panel = document.getElementById("panel");
+  const voiceSel = document.getElementById("voiceSel");
+  const senseSel = document.getElementById("senseSel");
+  const wakeSel = document.getElementById("wakeSel");
+  const volSel = document.getElementById("volSel");
+  const animSel = document.getElementById("animSel");
+  const previewBtn = document.getElementById("previewBtn");
+  const usageBtn = document.getElementById("usageBtn");
+  function fillSettings(data) {
+    if (!voiceSel || !data || !data.voices) return;
+    voiceSel.innerHTML = "";
+    data.voices.forEach((voice) => {
+      const opt = document.createElement("option");
+      opt.value = voice.id;
+      opt.textContent = voice.label;
+      if (voice.id === data.voice) opt.selected = true;
+      voiceSel.appendChild(opt);
+    });
+    if (senseSel) senseSel.value = data.sensitivity || "normal";
+    if (wakeSel) wakeSel.value = data.wake === "an" ? "an" : "aus";
+    if (volSel) volSel.value = data.volume || "normal";
+    if (animSel) {
+      animSel.value = ANIM_ID[data.animation] != null ? data.animation : "kugel";
+      curAnim = animSel.value;
+    }
+    fillHermes(data.hermes || {});
+    fillUsage(data.usage);
+  }
+  function resetLabel(iso) {
+    if (!iso) return "";
+    const when = new Date(iso);
+    if (Number.isNaN(when.getTime())) return "";
+    const mins = Math.round((when.getTime() - Date.now()) / 60000);
+    if (mins <= 1) return "Reset gleich";
+    if (mins < 120) return "Reset in " + mins + " Min.";
+    if (mins < 2880) return "Reset in " + Math.round(mins / 60) + " Std.";
+    return "Reset in " + Math.round(mins / 1440) + " Tagen";
+  }
+  function windowLabel(raw) {
+    const key = String(raw || "").toLowerCase();
+    if (key === "session") return "5 Stunden";
+    if (key === "weekly") return "Woche";
+    return String(raw || "Limit").slice(0, 24);
+  }
+  function germanUsageNote(note) {
+    const text = String(note || "");
+    const banked = text.match(/you have (\d+) resets? banked/i);
+    if (!banked) return "";
+    const count = Number(banked[1]);
+    return count === 1 ? "1 Reset liegt bereit." : count + " Resets liegen bereit.";
+  }
+  function fillUsage(data) {
+    const plan = document.getElementById("usagePlan");
+    const windows = document.getElementById("usageWindows");
+    const note = document.getElementById("usageNote");
+    if (!plan || !windows || !note) return;
+    windows.textContent = "";
+    note.textContent = "";
+    if (!data) {
+      plan.textContent = "OpenAI Codex";
+      windows.textContent = "Noch nicht geladen.";
+      return;
+    }
+    if (!data.ok) {
+      plan.textContent = "OpenAI Codex";
+      windows.textContent = data.error || "Keine Nutzungsdaten.";
+      return;
+    }
+    plan.textContent = data.plan ? ("Codex · " + data.plan) : "OpenAI Codex";
+    const rows = data.windows || [];
+    if (!rows.length) {
+      windows.textContent = "Keine Fensterdaten.";
+      note.textContent = germanUsageNote(data.note);
+      return;
+    }
+    rows.forEach((item) => {
+      const left = Math.max(0, Math.min(100, Number(item.left) || 0));
+      const tone = left < 20 ? "low" : left < 45 ? "mid" : "";
+      const row = document.createElement("div");
+      row.className = "usageRow";
+      const meta = document.createElement("div");
+      meta.className = "usageMeta";
+      const name = document.createElement("span");
+      name.textContent = windowLabel(item.label);
+      const pct = document.createElement("span");
+      pct.className = "pct" + (tone ? " " + tone : "");
+      pct.textContent = left.toFixed(left % 1 ? 1 : 0) + "% frei";
+      meta.appendChild(name);
+      meta.appendChild(pct);
+      const track = document.createElement("div");
+      track.className = "usageTrack";
+      const fill = document.createElement("div");
+      fill.className = "usageFill" + (tone ? " " + tone : "");
+      fill.style.width = left + "%";
+      track.appendChild(fill);
+      row.appendChild(meta);
+      row.appendChild(track);
+      const reset = resetLabel(item.resets_at);
+      if (reset) {
+        const when = document.createElement("div");
+        when.className = "usageReset";
+        when.textContent = reset;
+        row.appendChild(when);
+      }
+      windows.appendChild(row);
+    });
+    note.textContent = germanUsageNote(data.note);
+  }
+  function fillHermes(hermes) {
+    const found = document.getElementById("hermesFound");
+    const conn = document.getElementById("hermesConn");
+    const model = document.getElementById("hermesModel");
+    const hint = document.getElementById("hermesHint");
+    if (found) {
+      found.textContent = hermes.found ? "Agent: gefunden" : "Agent: nicht gefunden";
+      found.className = "line " + (hermes.found ? "ok" : "bad");
+    }
+    if (conn) {
+      if (!hermes.found) {
+        conn.textContent = "Verbindung: nicht bereit";
+        conn.className = "line bad";
+      } else {
+        conn.textContent = hermes.connected ? "Verbindung: verbunden" : "Verbindung: startet …";
+        conn.className = "line " + (hermes.connected ? "ok" : "bad");
+      }
+    }
+    if (model) {
+      const bits = hermes.found
+        ? [hermes.profile, hermes.model, hermes.provider].filter(Boolean)
+        : [];
+      model.textContent = bits.join(" · ");
+    }
+    if (hint) hint.classList.toggle("show", !hermes.found);
+  }
+  function saveSettings() {
+    fetch("/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        voice: voiceSel ? voiceSel.value : "",
+        sensitivity: senseSel ? senseSel.value : "normal",
+        wake: wakeSel ? wakeSel.value : "aus",
+        volume: volSel ? volSel.value : "normal",
+        animation: animSel ? animSel.value : "kugel",
+      }),
+    }).catch(() => {});
+  }
+  if (gear && panel) {
+    gear.addEventListener("click", () => {
+      const open = !panel.classList.contains("open");
+      panel.classList.toggle("open", open);
+      gear.classList.toggle("open", open);
+    });
+  }
+  if (voiceSel) voiceSel.addEventListener("change", saveSettings);
+  if (senseSel) senseSel.addEventListener("change", saveSettings);
+  if (wakeSel) wakeSel.addEventListener("change", saveSettings);
+  if (volSel) volSel.addEventListener("change", saveSettings);
+  if (animSel) animSel.addEventListener("change", () => {
+    curAnim = animSel.value;
+    saveSettings();
+  });
+  if (previewBtn) previewBtn.addEventListener("click", () => {
+    saveSettings();
+    fetch("/preview", { method: "POST" }).catch(() => {});
+  });
+  if (usageBtn) usageBtn.addEventListener("click", () => {
+    usageBtn.disabled = true;
+    fetch("/usage", { cache: "no-store" }).then((r) => r.json()).then(fillUsage).catch(() => {
+      fillUsage({ ok: false, error: "Nutzung konnte nicht geladen werden." });
+    }).finally(() => { usageBtn.disabled = false; });
+  });
+  if (!SHOT) {
+    fetch("/settings", { cache: "no-store" }).then((r) => r.json()).then(fillSettings).catch(() => {});
+  }
   window.addEventListener("keydown", (e) => {
     if (assemble < 1) assemble = 1;
     if (e.key === "f" || e.key === "F") { showFps = !showFps; fpsEl.style.opacity = showFps ? 0.6 : 0; }
+    if (confirmId && (e.key === "Enter" || e.key === "Escape")) {
+      e.preventDefault();
+      voteConfirm(e.key === "Enter");
+      return;
+    }
+    if (e.key === " " && !SHOT) { e.preventDefault(); setPaused(!pausedOn); }
   });
   window.addEventListener("resize", () => { if (SHOT) renderShot(); else layout(); });
 
