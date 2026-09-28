@@ -1,24 +1,27 @@
 # Jarvis
 
-Lokaler Sprachassistent für **macOS**. Dieses Repo ist der Fork [s3vdev/Jarvis](https://github.com/s3vdev/Jarvis). Er spricht mit dem **Hermes**, das auf dem jeweiligen Rechner schon installiert und angemeldet ist. Kein Claude-Konto, keine Tokens im Repo.
+Jarvis ist ein kleiner Sprachassistent für den Mac. Du sprichst, eine Pause schickt die Frage, er antwortet.
 
-Ursprung: [Sujatx/Jarvis](https://github.com/Sujatx/Jarvis). Bitte [NOTICE](NOTICE) lesen.
+Er nutzt das Hermes, das schon auf dem Rechner läuft. Kein extra Konto in diesem Ordner, keine Schlüssel im Repo.
 
 <p align="center">
   <img src="docs/jarvis-fenster.jpg" alt="Jarvis-Fenster mit goldener Kugel, Pause und Zuhören" width="640">
 </p>
 
-Das kleine Mac-Fenster zeigt **J.A.R.V.I.S**, die goldene Kugel und unten **PAUSE** / **ZUHÖREN**. Eine Sprechpause schickt die Frage. Du kannst ihm ins Wort fallen.
+Unten im Fenster: **Pause** und **Zuhören**. Das rote Schließen blendet das Fenster nur aus. Beenden geht über das Icon in der Menüleiste.
 
 <p align="center">
-  <img src="docs/jarvis-einstellungen.jpg" alt="Jarvis-Einstellungen mit Hermes, Nutzung, Stimme und Mikrofon" width="640">
+  <img src="docs/jarvis-einstellungen.jpg" alt="Einstellungen mit Hermes, Nutzung und Stimme" width="640">
 </p>
 
-Im Zahnrad: Hermes-Status, Codex-Nutzung, Stimme, Mikrofon, optionaler Rufname, Lautstärke und Animation.
+Im Zahnrad siehst du, ob Hermes da ist, wie viel vom Codex-Kontingent noch frei ist, und stellst Stimme, Mikrofon und Animation ein.
 
-## Start
+## So startest du
 
-**Einmal:** `setup.command`  
-**Danach:** `Jarvis starten.command` doppelklicken, dann einfach Deutsch sprechen.
+Einmal `setup.command` ausführen. Danach `Jarvis starten.command` doppelklicken und Deutsch sprechen. Enter brauchst du nicht.
 
-Ausführliche Anleitung, Grenzen und Tests: [README-DE.md](README-DE.md).
+Du brauchst macOS 13 oder neuer, Python 3, die Xcode Command Line Tools und ein eigenes, angemeldetes Hermes.
+
+Mehr zu Bedienung, Grenzen und Tests steht in [README-DE.md](README-DE.md).
+
+Das Gesicht und die alte Voice-Line kommen von [Sujatx/Jarvis](https://github.com/Sujatx/Jarvis). Dieser Stand ist der Fork [s3vdev/Jarvis](https://github.com/s3vdev/Jarvis). Details zur Herkunft: [NOTICE](NOTICE).
