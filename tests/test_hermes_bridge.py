@@ -12,17 +12,20 @@ sys.path.insert(0, str(ROOT / 'voice-line'))
 
 class FakeClient:
     def __init__(self, payload):
-        self.payload = payload
+        self.payloads = list(payload) if isinstance(payload, list) else [payload]
         self.calls = []
+        self._index = 0
 
     def ask(self, text):
         self.calls.append(text)
-        if isinstance(self.payload, Exception):
-            raise self.payload
+        payload = self.payloads[min(self._index, len(self.payloads) - 1)]
+        self._index += 1
+        if isinstance(payload, Exception):
+            raise payload
         from hermes_bridge import BridgeError
-        if not self.payload.get('ok') or not str(self.payload.get('text') or '').strip():
-            raise BridgeError(self.payload.get('error') or 'keine Antwort')
-        return self.payload
+        if not payload.get('ok') or not str(payload.get('text') or '').strip():
+            raise BridgeError(payload.get('error') or 'keine Antwort')
+        return payload
 
 
 class BridgeTests(unittest.TestCase):
@@ -67,7 +70,9 @@ class BridgeTests(unittest.TestCase):
             self.assertNotIn('Hermes-Terminal', client.calls[0])
             self.assertIn('Das geht von hier aus nicht', client.calls[0])
             self.assertIn('verstehe die Absicht', client.calls[0])
-            self.assertIn('Recherchiere', client.calls[0])
+            self.assertIn('aus deinem Wissen', client.calls[0])
+            self.assertNotIn('Recherchiere', client.calls[0])
+            self.assertIn('niemals', client.calls[0])
             self.assertNotIn('\n\nErinnerungen, die der Nutzer gespeichert hat:\n', client.calls[0])
             self.assertEqual(client.calls[1], 'Zweiter Satz.')
 
@@ -133,6 +138,22 @@ class BridgeTests(unittest.TestCase):
             self.assertFalse(info['connected'])
             self.assertEqual(info['model'], 'gpt-6-astra')
             self.assertEqual(info['provider'], 'openai-codex')
+
+    def test_closed_refusal_on_a_question_gets_a_knowledge_followup(self):
+        from hermes_bridge import HermesBridge
+        sid = '20260927_220000_abcdef'
+        with tempfile.TemporaryDirectory(dir=ROOT / '.run') as tmp:
+            bridge = HermesBridge(ROOT, Path(tmp) / 'session.json', executable='/local/hermes')
+            client = FakeClient([
+                {'ok': True, 'text': 'Das geht von hier aus nicht.', 'session_id': sid},
+                {'ok': True, 'text': 'Sven Mielke wird mit Bergneustadt in Verbindung gebracht.', 'session_id': sid},
+            ])
+            bridge._client = client
+            with patch('hermes_bridge.subprocess.run', return_value=self._policy()):
+                spoken = bridge.ask('Was findest du über Sven Mielke aus Bergneustadt heraus?')
+            self.assertEqual(spoken, 'Sven Mielke wird mit Bergneustadt in Verbindung gebracht.')
+            self.assertEqual(len(client.calls), 2)
+            self.assertIn('ohne Werkzeuge', client.calls[1])
 
     def test_child_env_keeps_approvals_closed(self):
         from hermes_bridge import HermesBridge

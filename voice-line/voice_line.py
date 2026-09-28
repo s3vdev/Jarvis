@@ -614,7 +614,10 @@ _speak_lock = threading.Lock()
 _timer_cancel = threading.Event()
 _timer_lock = threading.Lock()
 _barge_hit = False
-BARGE_GRACE_S = 0.32
+BARGE_GRACE_S = 0.35
+BARGE_FLOOR = 0.10
+BARGE_COUPLING = 0.40
+BARGE_VOICE = 0.06
 
 
 def ask_brain(text, first_turn=False):
@@ -726,6 +729,13 @@ def split_spoken(text):
     return parts or [text]
 
 
+def barge_threshold(play_rms, vad=0.016):
+    """Mic level that counts as a person talking over the speakers."""
+    floor = max(float(vad) * 6.0, BARGE_FLOOR)
+    echo = max(0.0, float(play_rms)) * BARGE_COUPLING
+    return max(floor, echo + BARGE_VOICE)
+
+
 def consume_barge():
     """True once after the user talked over Jarvis."""
     global _barge_hit
@@ -758,7 +768,6 @@ def _play_wav(path):
     duration = len(data) / float(sr)
     frame = int(SAMPLE_RATE * 0.03)
     sense = SENSITIVITY[load_settings()["sensitivity"]]
-    barge_on = max(float(sense["vad"]) * 2.4, 0.05)
     need = int(sense["start"]) + 4
     voiced = 0
     mic = None
@@ -779,15 +788,20 @@ def _play_wav(path):
             elapsed = time.time() - start
             if elapsed >= duration:
                 break
+            pos = min(len(data) - 1, int(elapsed * sr))
             if mic is not None and elapsed >= BARGE_GRACE_S:
                 try:
                     block, _overflowed = mic.read(frame)
                     mono = block[:, 0]
                     rms = float(np.sqrt(np.mean(mono ** 2)) + 1e-9)
-                    if rms > barge_on:
+                    n_play = max(frame * 4, int(sr * 0.08))
+                    play_chunk = data[pos:pos + n_play]
+                    play_rms = float(np.sqrt(np.mean(play_chunk ** 2)) + 1e-9) if len(play_chunk) else 0.0
+                    if rms > barge_threshold(play_rms, sense["vad"]):
                         voiced += 1
                         if voiced >= need:
                             _barge_hit = True
+                            print("[voice] barge-in")
                             try:
                                 sd.stop()
                             except Exception:  # noqa: BLE001
@@ -797,7 +811,6 @@ def _play_wav(path):
                         voiced = 0
                 except Exception:  # noqa: BLE001
                     pass
-            pos = min(len(data) - 1, int(elapsed * sr))
             write_waveform(data[pos:pos + win], TTS_GAIN)
             time.sleep(0.02)
     finally:

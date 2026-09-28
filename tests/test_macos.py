@@ -233,6 +233,11 @@ class MacTests(unittest.TestCase):
         self.assertEqual(voice.split_wake('okay dscharvis was gibt es neues'), (True, 'was gibt es neues'))
         self.assertTrue(voice.is_echo('deine Nachricht kommt an', 'Ja, deine Nachricht kommt an.'))
         self.assertFalse(voice.is_echo('Wie wird das Wetter?', 'Ja, deine Nachricht kommt an.'))
+        self.assertGreater(voice.barge_threshold(0.30, 0.016), voice.barge_threshold(0.0, 0.016))
+        self.assertGreater(voice.barge_threshold(0.30, 0.016), 0.05)
+        limit = voice.barge_threshold(0.30, 0.016)
+        self.assertFalse(0.08 > limit)
+        self.assertTrue(0.28 > limit)
 
     def test_spoken_stop_and_optional_wake(self):
         import tempfile

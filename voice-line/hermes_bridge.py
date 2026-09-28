@@ -25,18 +25,35 @@ _PERSONA = (
     'Namen verdreht klingen oder der Satz unvollständig wirkt. '
     'Ergänze Offensichtliches aus dem Gespräch. Frage nur nach, wenn wirklich nichts Sinnvolles erkennbar ist. '
     'Bitte nie darum, etwas einzutippen. Ist die Aufgabe klar, erledige sie. '
-    'Recherchiere Fakten, Personen, Orte, Wetter und Nachrichten selbst und sage das Ergebnis. '
-    'Öffne dafür keinen Browser, keine Datei und kein Programm per Werkzeug. '
+    'Bei Fragen zu Fakten, Personen, Orten, Wetter und Nachrichten: antworte aus deinem Wissen. '
+    'Starte dafür kein Terminal, keinen Browser, kein curl und kein Suchwerkzeug. '
+    'Öffne keine Datei und kein Programm per Werkzeug. '
     'Führe nur ausdrücklich angeforderte Aktionen aus. '
     'Behalte alle Hermes-Sicherheitsprüfungen bei. Umgehe niemals eine Verweigerung. '
-    'Wenn eine Änderung eine Freigabe braucht, sag nur: Das geht von hier aus nicht. '
-    'Eine Frage, Suche oder Auskunft ist das nicht. '
+    'Sag „Das geht von hier aus nicht“ nur, wenn der Nutzer ausdrücklich etwas ändern, öffnen, '
+    'installieren oder speichern will und dafür eine Freigabe fehlt. '
+    'Bei einer Frage, Suche oder Auskunft sag diesen Satz niemals. Dann nenne bekannte öffentliche '
+    'Fakten oder sage klar, dass du nichts Sicheres weißt. '
     'Nicht auf ein Terminal, Hermes-Fenster oder Eintippen verweisen. '
     'Keine Änderung an Hermes-Konfiguration oder Profilen. '
     'Erfinde keine persönlichen Angaben. Nutze nur Erinnerungen, die der Nutzer '
     'gespeichert hat. Schreibe das Gedächtnis nicht selbst. '
     'Behaupte Aktionen nur mit erfolgreichem Werkzeugergebnis.'
 )
+_CLOSED_REFUSAL = re.compile(r'^\s*das geht von hier aus nicht\.?\s*$', re.I)
+_QUESTION_FOLLOWUP = (
+    'Das war eine Frage oder Auskunft, keine Systemänderung. '
+    'Antworte jetzt aus deinem Wissen, ohne Werkzeuge. '
+    'Sag nicht, dass es von hier aus nicht geht.'
+)
+_KNOWLEDGE_FALLBACK = (
+    'Dazu habe ich keine sichere Auskunft. Frag mich gerne genauer.'
+)
+
+
+def is_closed_refusal(text):
+    """True when Hermes used the approval phrase instead of answering."""
+    return bool(_CLOSED_REFUSAL.match(text or ''))
 
 # Library logs go to stderr. Protocol lines stay on the original stdout, saved as fd 3.
 _WORKER_BOOT = r'''
@@ -118,7 +135,14 @@ class HermesBridge:
             text += '\n\nNutzer: ' + spoken
         reply = self._ensure_client().ask(text)
         self._remember(reply)
-        return reply['text'].strip()
+        spoken = reply['text'].strip()
+        if is_closed_refusal(spoken):
+            reply = self._ensure_client().ask(_QUESTION_FOLLOWUP)
+            self._remember(reply)
+            spoken = reply['text'].strip()
+        if is_closed_refusal(spoken):
+            return _KNOWLEDGE_FALLBACK
+        return spoken
 
     def _child_env(self):
         env = dict(os.environ)
