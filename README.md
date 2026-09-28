@@ -3,7 +3,7 @@
 **A voice-controlled assistant for macOS, connected to a local Hermes installation.**
 
 <p align="center">
-  <img src="docs/jarvis-fenster.jpg" alt="Jarvis window with the golden orb, Pause and Listen" width="640">
+  <img src="docs/jarvis-cover.jpg" alt="Jarvis: Sprich. Pause. Antwort." width="640">
 </p>
 
 Jarvis is my personal macOS voice assistant, based on a fork of the original [Sujatx/Jarvis](https://github.com/Sujatx/Jarvis) project.

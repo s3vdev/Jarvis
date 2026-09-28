@@ -1,0 +1,7 @@
+#!/bin/sh
+# Remove Cursor agent attribution from commit messages in this repo.
+file="$1"
+[ -n "$file" ] || exit 0
+tmp="${file}.tmp.$$"
+grep -v -E '^Co-authored-by: Cursor <cursoragent@cursor.com>$|^Made-with: Cursor$' "$file" > "$tmp"
+mv "$tmp" "$file"

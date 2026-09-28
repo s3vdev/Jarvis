@@ -3,7 +3,7 @@
 **Sprachgesteuerter Assistent für macOS mit direkter Anbindung an eine lokale Hermes-Installation.**
 
 <p align="center">
-  <img src="docs/jarvis-fenster.jpg" alt="Jarvis-Fenster mit goldener Kugel, Pause und Zuhören" width="640">
+  <img src="docs/jarvis-cover.jpg" alt="Jarvis: Sprich. Pause. Antwort." width="640">
 </p>
 
 Jarvis ist mein persönlicher Sprachassistent für macOS. Das Projekt basiert auf einem Fork von [Sujatx/Jarvis](https://github.com/Sujatx/Jarvis), den ich für meinen eigenen Workflow weiterentwickelt habe.
